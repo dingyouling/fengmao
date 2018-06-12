@@ -1,0 +1,159 @@
+<template>
+    <div class="login">
+        <header class="trains-color">
+            <router-link class="f24 back back1 not_used_common header_close" :to="'/index/trains/' + $route.query.pageType"></router-link>
+            <h1 class="f40 tc category cf">12306账号登录</h1>
+        </header>
+        <div class="form bgf">
+            <div class="line100 f32 pd bgf">
+                <span>账号 :</span>
+                <input type="text" placeholder="请输入正确的12306账号" class="f32" v-model="account"></div>
+            <div class="line100 f32 pd bgf">
+                <span>密码 :</span>
+                <input type="password" placeholder="请输入正确的密码" class="f32" v-model="code"></div>
+        </div>
+        <a class="log trains-color tc cf" id="train_login_submit" @click="login">登录</a>
+    </div>
+</template>
+
+<script>
+import { mapActions } from 'vuex'
+export default{
+  data() {
+    return {
+      account: '',
+      code: ''
+    }
+  },
+  methods: {
+    ...mapActions({
+      setLoginData: 'setLoginData'
+    }),
+    login() {
+      this.setLoginData({accountNo: this.account, accountPwd: this.code, pageType: this.$route.query.pageType})
+    }
+  }
+}
+</script>
+
+<style scoped>
+.bgf3{
+    background-color: #f2f7ff;
+}
+
+input{
+    width: 5rem;
+}
+.line100{
+    line-height: 1rem;
+}
+.form{
+    margin-top: .5rem;
+}
+.bb{
+    border-bottom: 1px solid #f2f7ff;
+}
+.mb{
+    margin-bottom: .1rem;
+}
+.log,.reg{
+    width:6.9rem;
+    line-height:.8rem;
+    display: block;
+    margin: .3rem auto .1rem;
+    border-radius: .4rem;
+    border:1px solid #03a9f4;
+}
+.label{
+    width:1.6rem;
+    display: inline-block;
+}
+.cb{
+    color:#03A9F4;
+}
+.bgb{
+    background: #03A9F4;
+}
+.tr{
+    text-align: right;
+    display: block;
+}
+
+.order_info_status{
+    height:1.3rem;
+}
+.order_info_status>.border_info_status_box {
+    height: .4rem;
+    margin-top: .4rem;
+    display: -webkit-flex;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: .8rem 1.6rem 0;
+}
+.sf {
+    background-image: url(../../../assets/images/trains/reg/sf.png);
+    background-position: center center;
+    background-repeat: no-repeat;
+    -webkit-background-size: .28rem;
+    background-size: .28rem;
+}
+.rz {
+    background-image: url(../../../assets/images/trains/reg/rz.png);
+    background-position: center center;
+    background-repeat: no-repeat;
+    -webkit-background-size: .28rem;
+    background-size: .28rem;
+}
+.order_info_status_1 {
+    width: .4rem;
+    height: .4rem;
+    border-radius: 50%;
+}
+.order_info_status_2, .order_info_status_4 {
+    width: 1.3rem;
+    height: .02rem;
+}
+.border_info_status_wenzi {
+    position: relative;
+    margin-top: .2rem;
+}
+.order_info_status_wenzi_1 {
+    position: absolute;
+    top: 0;
+    left: 1.2rem;
+}
+.order_info_status_wenzi_2 {
+    position: absolute;
+    top: 0;
+    left: 3.2rem;
+}
+.order_info_status_wenzi_3 {
+    position: absolute;
+    top: 0;
+    left: 5.1rem;
+}
+.order_info_status_5, .order_info_status_3{
+    width:.4rem;
+    height:.4rem;
+    border-radius: 50%;
+}
+input{
+    width:5rem;
+}
+.dxyz,.zhsz{
+    display: none;
+}
+.yzm{
+    position: relative;
+}
+.yzm>div{
+    width:1.4rem;
+    background: #03A9F4;
+    position: absolute;
+    top:0;right:0;
+}
+.log{
+    margin-top: 1.5rem;
+}
+</style>

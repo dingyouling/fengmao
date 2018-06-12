@@ -1,0 +1,664 @@
+<template>
+	<div class="paytrains">
+		<div>
+			<header class="trains-color cf">
+	      <a class="f24 back back1" @click="goBack"></a>
+	      <h1 class="tc f36">立即支付{{$route.query.payBusiType === 'payTrainsTicketChange' ? '(改签)' : ''}}</h1>
+	    </header>
+			<div class="bgf">
+				<div class="dc_sub_1 tc c33 f36">
+					<img src="../../../assets/images/trains/time2@2x.png" alt="">
+				</div>
+				<div class="dc_sub_2 f24 c00 tc">
+					<span>支付剩余时间：</span>
+				</div>
+				<div class="dc_sub_status f40 cl tc">{{parseInt(countDownTime / 60)}}:{{parseInt(countDownTime % 60)}}</div>
+				<div class="dc_sub_3 bgf">
+					<div class="clearfix">
+						<span class="f30 c66 fl">车次：</span>
+            <span class="f28 c99 fr" v-if="">{{payInfo.trainNo}} {{payInfo.fromStation}}-{{payInfo.toStation}}</span>
+					</div>
+					<div class="clearfix">
+						<span class="f30 c66 fl">席别：</span>
+            <span class="f28 cl fr" v-if="!$route.query.ticketId">{{payInfo.ticketList[0].seatClassStr}}</span>
+						<span class="f28 cl fr" v-if="$route.query.ticketId">{{payInfo.seatClassStr}}</span>
+					</div>
+					<div class="clearfix">
+						<span class="f30 c66 fl">出发时间：</span>
+						<span class="f28 c99 fr">{{payInfo.trainDate}}</span>
+					</div>
+					<div class="dc_sub_6 c66 f28 clearfix pd">
+	            <div class="fl">卡券 : </div>
+	            <div class="fr" @click="couponListFuc"><span class="cr">{{($route.query.recId) ? ('-' + $route.query.discountAmount) : '选择卡券'}}</span></div>
+	        </div>
+				</div>
+				<div class="bgf3 pd" style="line-height:.8rem;">请选择支付方式</div>
+				<div class="list-block media-list pd bgf">
+					<ul>
+						<li v-if="mbPay">
+							<label class="label-checkbox item-content clearfix">
+							  <div class="fl">
+							  	<img src="../../../assets/images/person/mb_tx.png" alt="">
+							  </div>
+							  <div class="item-inner fl">
+							  	<div class="item-subtitle f30">
+							  		可用猫币（剩余
+							  		<span class="co">{{usableBank}}</span>
+							  		元）
+							  	</div>
+							  	<div class="item-text f20 c66">使用猫币支付时，不享受优惠</div>
+							  </div>
+						    <div>
+						    	<input name="my-radio" type="radio" @change="inputChange('mb')">		
+							    <div class="item-media fr">
+							      <i class="icon icon-form-checkbox"></i>
+							    </div>
+						    </div>
+					    </label>
+				    </li>
+				    <li v-if="!mbPay">
+							<div class="label-checkbox item-content clearfix">
+							  <div class="fl">
+							  	<img src="../../../assets/images/person/mb_tx.png" alt="">
+							  </div>
+							  <div class="item-inner fl">
+							  	<div class="item-subtitle f30">
+							  		可用猫币（剩余
+							  		<span class="co">{{usableBank}}</span>
+							  		元）
+							  	</div>
+							  	<div class="item-text f20 c66">使用猫币支付时，不享受优惠</div>
+							  </div>
+							  <router-link to="/purchase" class="bgo f30">
+                  <a class="cf">立即预购</a>
+                </router-link>
+					    </div>
+				    </li>
+				    <li v-if="isWechat">
+					    <label class="label-checkbox item-content clearfix">
+						    <div class="fl">
+							    <img src="../../../assets/images/purchase/wx.png" alt="">
+							  </div>
+						    <div class="item-inner fl" style="margin-top:.15rem;">
+							    <div class="item-subtitle f30">微信支付</div>
+						    </div>
+						    <input name="my-radio" type="radio" @change="inputChange('wx')">		
+								<div class="item-media fr">
+								  <i class="icon icon-form-checkbox"></i>
+								</div>
+					    </label>
+				    </li>
+				    <li v-if="!isWechat">
+					    <label class="label-checkbox item-content clearfix">
+						    <div class="fl">
+							    <img src="../../../assets/images/purchase/wx_h.png" alt="">
+							  </div>
+						    <div class="item-inner fl" style="margin-top:.15rem;">
+							    <div class="item-subtitle f30">微信支付</div>
+						    </div>
+					    </label>
+				    </li>
+			    </ul>
+			  </div>
+			  <div class="pay pd f40 bgf">
+			    应付:{{payAmount}}元<span style="color:orange;font-size:.16rem;" v-show="payType === 'wx'">{{buyFeeStr}}</span>
+			    <a class="fr bgl cf tc" @click="subPayInfo">立即支付</a>
+          <div>{{buyFeeStr}}</div>
+			  </div>
+			</div>
+		</div>
+    <Pass @sendPassword="sendPassword" @hidePassBox="hidePassBox" v-show="isShowPassBox"></Pass>
+    <v-dialog v-show="dialogShow" :dialogMsg="'您还未设置支付密码，现在去设置？'" @confirm="dialogConfirm" @cancel="dialogShow=false"></v-dialog>
+	</div>
+</template>
+
+<script>
+import _me from '../../../fetch/me.js'
+import { alert } from '../../../util/tool.js'
+import _pay from '../../../fetch/pay.js'
+import _trains from '../../../fetch/trains.js'
+import router from '../../../router/'
+import Pass from '../../Pass'
+import sha1 from '../../../assets/js/SHA-1'
+import md5 from '../../../assets/js/md5'
+import Dialog from '../../Dialog'
+export default{
+  data() {
+    return {
+      subInfo: {
+        accPayAmount: 0.00,
+        couponIds: '',
+        discountAmount: 0.00,
+        orderCode: '',
+        payAmount: 0.00,
+        payPoundageAmount: 0.00,
+        payPwd: '2f393508c2e8db02c4c69111887b9276',
+        payType: '',
+        ticketId: ''
+      },
+      totalPrice: 0.00,
+      origPrice: 0.00,
+      usableBank: 0.00,
+      countDownTime: 0,
+      updateTime: 0,
+      nowTime: 0,
+      bankAmount: 0.00,
+      bindStatus: 1,
+      isWechat: false,
+      mbPay: false,
+      dialogShow: false,
+      isShowPassBox: false,
+      busiType: 8,
+      buyFeeStr: '',
+      payType: '',
+      payAmount: 0.00,
+      payInfo: null
+    }
+  },
+  components: {
+    Pass,
+    'v-dialog': Dialog
+  },
+  computed: {
+    orderCode() {
+      return this.$route.query.orderCode
+    },
+    createTime() {
+      return this.$route.query.createTime
+    },
+    payBusiType() {
+      return this.$route.query.payBusiType
+    }
+  },
+  mounted() {
+    if (this.payBusiType === 'payTrainsTicket') {
+      this.rechargeDetail()
+    }
+    this.personalDetail()
+    this.getMerchantBasic()
+    this.payTimeCountDown()
+    this.getBuyFee()
+    if (this.$route.query.ticketId) {
+      this.subInfo.ticketId = this.$route.query.ticketId
+      this.ticketChangeDtl()
+    } else {
+      this.ticketOrderDtl()
+    }
+    if (this.$route.query.recId) {
+      this.subInfo.couponIds = this.$route.query.recId
+    }
+    if (this.$route.query.discountAmount) {
+      this.subInfo.discountAmount = this.$route.query.discountAmount
+    }
+  },
+  methods: {
+    goBack() {
+      if (this.$route.query.changPayAgain) {
+        router.push({path: '/order/trains/info', query: {returnUrl: this.$route.returnUrl, orderCode: this.$route.orderCode}})
+      } else if (this.$route.query.payAgain) {
+        router.push({path: '/order/trains'})
+      } else {
+        console.log('回到火车首页')
+        router.push({path: '/index/trains'})
+      }
+    },
+    ticketOrderDtl() {
+      _trains.ticketOrderDtl({orderCode: this.orderCode}).then(res => {
+        this.payInfo = res.result
+      }).catch(error => {
+        console.log(error)
+      })
+    },
+    ticketChangeDtl() {
+      _trains.ticketChangeDtl({ticketId: this.$route.query.ticketId, type: 1}).then(res => {
+        this.payInfo = res.result
+      }).catch(error => {
+        console.log(error)
+      })
+    },
+    // 获取商城用户自己的库存
+    personalDetail() {
+      _me.personal().then(res => {
+        this.usableBank = res.result.usableBank
+        this.showPayType()
+      }).catch(error => {
+        console.log(error)
+      })
+    },
+    // 获取是否绑定分销商以及分销商的库存
+    getMerchantBasic() {
+      _me.getMerchantBasic().then(res => {
+        this.bindStatus = res.result.bindStatus
+        if (res.result.bindStatus === 2) {
+          _me.bank().then(res => {
+            // 上级分销商的库存
+            this.bankAmount = (parseInt(res.result.currencyBankAmount * 1) + parseInt(res.result.onlineBankAmount * 1)).toFixed(2)
+            if (this.bankAmount - this.payAmount >= 0) {
+              this.isWechat = true
+            } else if (this.bankAmount - this.payAmount < 0) {
+              this.isWechat = false
+            }
+            this.showPayType()
+          }).catch(error => {
+            console.log(error)
+          })
+        } else if (res.result.bindStatus === '-1') {
+          this.bankAmount = 999999999.00
+        }
+        this.isWechat = true
+        if (this.bankAmount < this.payAmount) {
+          this.isWechat = false
+        }
+        if (this.$route.query.payBusiType === 'payTrainsTicketChange') {
+          this.getChangeTicketInfo()
+        }
+      }).catch(error => {
+        console.log(error)
+      })
+    },
+    // 改签获取原支付方式
+    getChangeTicketInfo() {
+      _trains.getChangeTicketInfo({ticketId: this.$route.query.ticketId}).then(res => {
+        if (res.result.changeGapFee * 1 > 0) {
+          // 原车票支付方式,1：线上支付，2：猫币抵扣
+          if (res.result.oldPayMode === 1) {
+            this.mbPay = false
+            this.isWechat = true
+            this.totalPrice = (res.result.ticketPrice * 1 + res.result.changeGapFee * 1) * res.result.discount / 100 + res.result.insurePrice * 1
+            console.log(this.totalPrice)
+          } else if (res.result.oldPayMode === 2) {
+            this.origPrice = res.result.changeGapFee
+            console.log(this.origPrice)
+            this.mbPay = true
+            this.isWechat = false
+          }
+        } else {
+          if (res.result.oldPayMode === 1) {
+            this.mbPay = false
+            this.isWechat = true
+          } else if (res.result.oldPayMode === 2) {
+            this.mbPay = true
+            this.isWechat = false
+          }
+          this.origPrice = 0.00
+          this.payAmount = 0.00
+          this.totalPrice = 0.00
+        }
+      }).catch(error => {
+        console.log(error)
+      })
+    },
+    // 买票获取支付详情
+    rechargeDetail() {
+      _trains.rechargeDetail({orderCode: this.orderCode}).then(res => {
+        this.totalPrice = res.result.totalPrice
+        if (res.result.origPrice - this.subInfo.discountAmount >= 0) {
+          this.payAmount = (res.result.origPrice - this.subInfo.discountAmount).toFixed(2)
+        } else {
+          this.payAmount = 0.00
+        }
+        this.showPayType()
+        this.origPrice = res.result.origPrice
+        if (this.bankAmount < this.payAmount) {
+          this.isWechat = false
+        }
+      }).catch(error => {
+        console.log(error)
+      })
+    },
+    // 支付倒计时
+    payTimeFuc() {
+      this.updateTime = new Date(this.createTime.replace(/-/g, '/')).getTime() / 1000
+      this.nowTime = parseInt(new Date().getTime() / 1000)
+      this.countDownTime = 15 * 60 - (this.nowTime - this.updateTime)
+      if (this.countDownTime <= 0) {
+        clearTimeout(this.payTimer)
+        this.countDownTime = 0
+        router.push({ path: '/order/trains', query: { beginTime: '', endTime: '', returnListUrl: this.$route.path } })
+      } else {
+        this.nowTime ++
+      }
+    },
+    // 支付时间计算
+    payTimeCountDown() {
+      this.payTimeFuc()
+      if (this.$route.path.indexOf('payTrains') !== -1) {
+        let _this = this
+        this.payTimer = setTimeout(() => {
+          _this.payTimeCountDown()
+        }, 1000)
+      } else {
+        this.payTimer = ''
+      }
+    },
+    showPayType() {
+      if ((this.payAmount - this.usableBank) > 0) {
+        this.mbPay = false
+      } else if ((this.payAmount - this.usableBank) <= 0) {
+        this.mbPay = true
+      }
+      console.log(this.mbPay)
+    },
+    couponListFuc() {
+      if (this.$route.query.payBusiType === 'payTrainsTicket') {
+        router.push({path: '/me/coupon/valid', query: {busiType: '8', orderCode: this.orderCode, createTime: this.createTime, payBusiType: 'payTrainsTicket'}})
+      } else {
+        alert('改签不能选择卡券')
+      }
+    },
+    // 支付相关
+    inputChange(type) {
+      this.showPayType()
+      this.payType = type
+      if (type === 'mb') {
+        // 猫币支付金额 accPayAmount
+        // 第三方支付金额 payAmount
+        this.subInfo.payAmount = 0
+        this.subInfo.payType = ''
+        if ((this.origPrice - this.subInfo.discountAmount).toFixed(2) < 0) {
+          this.subInfo.accPayAmount = '0.00'
+          this.payAmount = '0.00'
+          this.subInfo.payAmount = '0.00'
+        } else {
+          this.payAmount = (this.origPrice - this.subInfo.discountAmount).toFixed(2)
+          this.subInfo.accPayAmount = (this.origPrice - this.subInfo.discountAmount).toFixed(2)
+        }
+        this.subInfo.payPoundageAmount = 0
+      } else if (type === 'wx') {
+        this.subInfo.accPayAmount = 0
+        this.subInfo.payType = 'wxJsPay'
+        // 是否为全额抵扣
+        if (this.totalPrice - this.subInfo.discountAmount < 0) {
+          this.payAmount = '0.00'
+          this.subInfo.payAmount = '0.00'
+          return false
+        } else {
+          console.log(this.totalPrice - this.subInfo.discountAmount)
+          this.payAmount = (this.totalPrice - this.subInfo.discountAmount).toFixed(2)
+          this.subInfo.payAmount = (this.totalPrice - this.subInfo.discountAmount).toFixed(2)
+        }
+      }
+    },
+    sendPassword(data) {
+      this.subInfo.payPwd = md5.md5.hex_md5(sha1.sha1.hex_sha1(data))
+      this.isShowPassBox = false
+      this.pay()
+    },
+    hidePassBox() {
+      this.isShowPassBox = false
+    },
+    subPayInfo() {
+      if (!this.$route.query.ticketId) {
+        this.subInfo.orderCode = this.orderCode
+      }
+      if (this.payType === 'mb') {
+        _pay.userCheck({ action: 3 }).then(res => {
+          if (res.result.isSetPayPw === 2) {
+            this.dialogShow = true
+          } else if (res.result.isSetPayPw === 1) {
+            this.isShowPassBox = true
+          }
+        })
+      } else if (this.payType === 'wx') {
+        if (this.subInfo.payAmount === '0.00') {
+          _pay.userCheck({ action: 3 }).then(res => {
+            if (res.result.isSetPayPw === 2) {
+              this.dialogShow = true
+            } else if (res.result.isSetPayPw === 1) {
+              this.isShowPassBox = true
+            }
+          })
+        } else {
+          this.subInfo.payPwd = ''
+          this.pay()
+        }
+      } else {
+        alert('请选择支付方式')
+        return false
+      }
+    },
+    getBuyFee() {
+      let buyFeeParams = {
+        terminalType: 1
+      }
+      buyFeeParams['sonBusiType'] = 9
+      buyFeeParams['busiType'] = 1
+      _pay.findPayChnList(buyFeeParams).then(res => {
+        if (res.result[0].poundageValue < 0) {
+          console.log('奖励')
+          this.buyFeeStr = '奖励'
+        } else if (res.result[0].poundageValue > 0) {
+          console.log('手续费')
+          this.buyFeeStr = '手续费'
+        }
+        if (res.result[0].poundageType === 1) {
+          this.buyFeeStr = this.buyFeeStr + (Math.abs(res.result[0].poundageValue / 100) + '元')
+        } else if (res.result[0].poundageType === 2) {
+          this.buyFeeStr = this.buyFeeStr + (Math.abs(res.result[0].poundageValue / 100) + '%')
+        }
+      }).catch(error => {
+        console.log(error)
+      })
+    },
+    pay() {
+      if (!this.$route.query.ticketId) {
+        _pay.orderPay(this.subInfo).then(res => {
+          router.push({ path: '/order/trains', query: { beginTime: '', endTime: '', returnListUrl: this.$route.path } })
+        })
+      } else {
+        _trains.confirmChangeTicket(this.subInfo).then(res => {
+          router.push({ path: '/order/trains', query: { beginTime: '', endTime: '', returnListUrl: this.$route.path } })
+        })
+      }
+      console.log(this.subInfo)
+    },
+    dialogConfirm() {
+      router.push({ path: '/me/set/setpass/zf' })
+    }
+  }
+}
+</script>
+<style scoped>
+* {
+  -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+  -webkit-touch-callout: none;
+}
+.pay{
+  height:.9rem;
+  position: fixed;
+  bottom:0;
+  left:0;
+  width:100%;
+  line-height: .9rem;
+}
+.pay>a{
+  width:40%;
+  position: absolute;
+  right:0;
+  bottom:0;
+}
+.dc_sub_3{
+  border:none;
+}
+.dc_sub_5 .bgo{
+  padding: 0 .1rem;
+  line-height: .5rem;
+}
+.dc_sub_5.disabled .c33{
+  background: url(../../../assets/images/person/person_img.png) left center no-repeat;
+  -webkit-background-size:.4rem;
+  background-size:.4rem;
+}
+.content-block-title + .list-block{
+  margin-top: .2rem;
+}
+.list-block ul {
+  position: relative;
+}
+.list-block ul::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: auto;
+  right: auto;
+  height: 1px;
+  width: 100%;
+  background-color: #e7e7e7;
+  display: block;
+  z-index: 15;
+  -webkit-transform-origin: 50% 0%;
+  transform-origin: 50% 0%;
+}
+.list-block li {
+  position: relative;
+  border-bottom: 1px solid #f2f7ff;
+}
+.list-block .item-content {
+  padding:.1rem 0;
+  box-sizing: border-box;
+  display: block;
+  -webkit-box-pack: justify;
+  -webkit-justify-content: space-between;
+  justify-content: space-between;
+  -webkit-box-align: center;
+  -webkit-align-items: center;
+  align-items: center;
+}
+label.label-checkbox input[type="radio"] {
+  display: none;
+}
+.list-block .item-media {
+  padding-top: 0.2rem;
+  padding-bottom: 0.2rem;
+}
+label.label-checkbox input[type="radio"]:checked + .item-media i.icon-form-checkbox {
+  border: none;
+  background:#0894ec url(../../../assets/images/trains/trains_icon10@2x.png) 0 0 no-repeat;
+  -webkit-background-size: cover;
+  background-size: cover;
+}
+label.label-checkbox i.icon-form-checkbox {
+  width: .4rem;
+  height: .4rem;
+  position: relative;
+  border-radius: 1.1rem;
+  border: 1px solid #c7c7cc;
+  box-sizing: border-box;
+}
+.icon {
+  font-family: "iconfont-sm" !important;
+  font-style: normal;
+  display: inline-block;
+  vertical-align: middle;
+  background-size: 100% auto;
+  background-position: center;
+  -webkit-font-smoothing: antialiased;
+  -webkit-text-stroke-width: 0.2px;
+  -moz-osx-font-smoothing: grayscale;
+}
+.list-block li img{
+  width: .4rem;
+  height: .4rem;
+  margin-right: .2rem;
+  margin-top: .2rem;
+}
+.list-block .bgo{
+  position: absolute;
+  right: 0;
+  top: .2rem;
+  padding: 0 .2rem;
+  line-height: .5rem;
+}
+.list-block .bgo a{
+  display: block;
+}
+.pay_mask{
+  width:100%;
+  height:100%;
+  position: absolute;
+  top:0;
+  left:0;
+  background-color: rgba(0,0,0,.5);
+  z-index:9999;
+}
+.pay_mask>div{
+  width:5rem;
+  height:1.5rem;
+  background-color: #fff;
+  position: absolute;
+  top:0;left:0;right:0;bottom:0;
+  margin:auto;
+}
+.pay_mask p{
+  line-height: .5rem;
+}
+.pay_mask_pass{
+  width:4.27rem;
+  height:.72rem;
+  background: url("../../../assets/images/purchase/input_bg.png") no-repeat center;
+  -webkit-background-size: 4.27rem;
+  background-size: 4.27rem;
+  margin:.1rem auto;
+  position: relative;
+}
+.pay_mask_pass>input{
+  background-color: transparent;
+  font-size: .62rem;
+  letter-spacing: .49rem;
+  padding-left: .25rem;
+  width: 4.6rem;
+  background-color: rgba(255,0,0,.5);
+  position: absolute;
+  top:0;
+  opacity:0;
+}
+.pay_mask_pass>ul{
+  width:4.27rem;
+  height:.72rem;
+}
+.pay_mask_pass li{
+  width:.15rem;
+  height:.15rem;
+  border-radius: 50%;
+  background-color: #333;
+  margin:.28rem;
+  display: none;
+}
+.pay_mask>div>span{
+  width:.2rem;
+  height:.2rem;
+  background: url("../../../assets/images/common/close.png");
+  -webkit-background-size:cover;
+  background-size:cover;
+  position: absolute;
+  top:.1rem;
+  left:.15rem;
+  font-family: "微软雅黑";
+}
+.dc_sub_3{
+padding: 0;
+}
+.dc_sub_3 > div{
+border-bottom: 1px solid #e5e5e5;
+margin: 0;
+padding: .2rem .3rem;
+}
+.dc_sub_1{
+margin-top: 0;
+padding-top: .2rem;
+}
+.dc_sub_1 img{
+width: 1.16rem;
+margin: 0 auto;
+}
+.dc_sub_6 .fr{
+  padding-right: .3rem;
+  background: url("../../../assets/images/common/right.png") no-repeat center right;
+  -webkit-background-size: .17rem;
+  background-size: .17rem;
+}
+.dc_sub_6 .cr{
+  color: #FF6953;
+}
+</style>

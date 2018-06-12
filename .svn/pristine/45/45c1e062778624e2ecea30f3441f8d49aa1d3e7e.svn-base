@@ -1,0 +1,61 @@
+<template>
+  <div class="trains">
+    <header class="bgf">
+      <router-link to="/" class="f24 back"></router-link>
+      <h1 class="f40 tc">火车票</h1>
+    </header>
+    <Scroll :on-refresh="onRefresh" :dataList="scrollData">
+      <div>11111</div>
+      <div>11111</div>
+      <div>11111</div>
+      <div>11111</div>
+      <div>11111</div>
+      <div>11111</div>
+      <div>11111</div>
+      <div>11111</div>
+      <div>11111</div>
+      <div>11111</div>
+      <div>11111</div>
+      <div>11111</div>
+      <div>11111</div>
+      <div>11111</div>
+      <div>11111</div>
+      <div>11111</div>
+      <div>11111</div>
+      <div>11111</div>
+      <div>11111</div>
+      <div>11111</div>
+      <div>11111</div>
+      <div>11111</div>
+      <div>11111</div>
+      <div>11111</div>
+      <div>11111</div>
+      <div>11111</div>
+      <div>11111</div>
+      <div>11111</div>
+    </Scroll>
+  </div>
+</template>
+
+<script>
+import Scroll from '@/components/Scroll'
+
+export default {
+  data() {
+    return {
+      scrollData: {
+        noFlag: false // 暂无更多数据显示
+      }
+    }
+  },
+  components: {
+    Scroll
+  },
+  methods: {
+    onRefresh(done) {      // 下拉刷新
+      console.log(1111111)
+      done()
+    }
+  }
+}
+</script>

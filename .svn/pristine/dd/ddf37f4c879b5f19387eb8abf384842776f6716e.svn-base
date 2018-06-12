@@ -1,0 +1,731 @@
+<template>
+  <div class="trainsadd">
+    <div v-show="!showSort">
+      <header class="trains-color">
+        <a href="javascript:history.back();" class="f24 back back1"></a>
+        <h1 class="f40 tc category cf">旅客信息</h1>
+      </header>
+      <div class="form">
+        <div class="line100 f32 pd bb bgf fix_sel fix_sel1" @click="showPassengerType = true">
+          <span class="label">乘客类型 </span>
+          <input type="text" :value="passengerTypeArr[passengerTypeIndex]" readonly readonlyunselectable="on" class="c8e" name="passengeType">
+        </div>
+        <div class="line100 f32 pd bb bgf name">
+          <span class="label">乘客姓名 </span>
+          <input type="text" placeholder="请输入正确的姓名" class="c8e" v-model="subInfo.passengerName">
+          <div class="help_icon bgf">
+            <img src="../../assets/images/gas/ykcz_bangzhu@2x.png" alt="">
+          </div>
+        </div>
+        <div class="line100 f32 pd bb bgf fix_sel fix_sel2 children1 card" @click="showIdType = true">
+          <span class="label">证件类型 </span>
+          <input type="text" :value="idTypeArr[idTypeIndex]" readonly readonlyunselectable="on" class="c8e" name="certType">
+        </div>
+        <div class="line100 f32 pd bb bgf children1 card">
+          <span class="label">证件号码 </span>
+          <input type="text" placeholder="请输入正确的证件号码" class="c8e" v-model="subInfo.idCard">
+        </div>
+        <div class="line100 f32 pd bb bgf children" v-show="!isIdCard || isChildren">
+          <span class="label">性别 </span>
+          <label :class="{label1:subInfo.sex == 1?true:false,label2:subInfo.sex == 0?true:false}"><input v-model="subInfo.sex" type="radio" value="1">男</label>
+          <label :class="{label1:subInfo.sex == 0?true:false,label2:subInfo.sex == 1?true:false}"><input v-model="subInfo.sex" type="radio" value="0">女</label>
+        </div>
+        <div class="line100 f32 pd bb bgf children" v-show="!isIdCard || isChildren" @click="visible = true">
+          <span class="label">出生日期 </span>
+          <input type="text" :value="subInfo.birthday" name="user_age" readonlyunselectable="on" id="user_age" readonly class="input c8e" />
+        </div>
+        <div v-show="isStudent">
+          <div class="line100 f32 pd bb bgf fix_sel mt20" @click="showSortType(0)">
+            <span class="label">学校省份 </span>
+            <input type="text" :value="chooseProvince.provinceName" readonly readonlyunselectable="on" class="c8e" name="provinceName">
+          </div>
+          <div class="line100 f32 pd bb bgf fix_sel" @click="showSortType(1)">
+            <span class="label">学校名称 </span>
+            <input type="text" :value="chooseSchool.schoolName" readonly readonlyunselectable="on" class="c8e" name="schoolName">
+          </div>
+          <div class="line100 f32 pd bb bgf">
+            <span class="label">学号 </span>
+            <input type="text" placeholder="与证件保持一致" class="c8e" v-model="subInfo.studentNo">
+          </div>
+          <div class="line100 f32 pd bb bgf fix_sel3" @click="showEductionalSystem = true">
+            <span class="label">学制 </span>
+            <input type="text" :value="eductionalSystemArr[eductionalSystemIndex] + '学制'" readonly readonlyunselectable="on" class="c8e" name="eductionalSystem">
+          </div>
+          <div class="line100 f32 pd bb bgf" @click="visible1 = true">
+            <span class="label">入学年份 </span>
+            <input type="text" :value="subInfo.admissionYear" name="user_age" id="user_age1" readonly readonlyunselectable="on" class="input c8e" />
+          </div>
+          <div class="line100 f32 pd bb bgf fix_sel mt20" @click="showSortType(2)">
+            <span class="label">优惠段(始)</span>
+            <input type="text" :value="subInfo.preferenceFromStation" readonly readonlyunselectable="on" class="c8e" name="startCity">
+          </div>
+          <div class="line100 f32 pd bb bgf fix_sel" @click="showSortType(3)">
+            <span class="label">优惠段(终)</span>
+            <input type="text" :value="subInfo.preferenceToStation" readonly readonlyunselectable="on" class="c8e" name="endCity">
+          </div>
+        </div>
+      </div>
+
+      <a href="javascript:;" class="log trains-color tc cf f32" @click="add" ref="add">添加</a>
+      <div class="wenzi pd" v-html="idTypeStr[idTypeIndex]"></div>
+
+      <!-- 证件类型 -->
+      <div class="selecter" v-show="showIdType">
+        <div class="box">
+          <div class="box_btn trains-color f32 cf pd">
+            <span @click="showIdType = false">取消</span>
+            <span>选择证件类型</span>
+            <span @click="showIdType = false">确定</span>
+          </div>
+          <ul class="box_sel f24 c66">
+            <li v-for="(val,index) in idTypeArr" :key="index" @click="idTypeIndex = index">
+              <span>{{val}}</span>
+              <img v-if="idTypeIndex != index" src="../../assets/images/trains/kong.png" alt="">
+              <img v-else src="../../assets/images/trains/yes@2x.png" alt="">
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <!--乘客类型-->
+      <div class="selecter" v-show="showPassengerType">
+        <div class="box">
+          <div class="box_btn trains-color f32 cf pd">
+            <span @click="showPassengerType = false">取消</span>
+            <span>选择乘客类型</span>
+            <span @click="showPassengerType = false">确定</span>
+          </div>
+          <ul class="box_sel f24 c66">
+            <li v-for="(val,index) in passengerTypeArr" :key="index" @click="passengerTypeIndex = index" v-if="index != 2 || ($route.query.isLogin == false && index == 2)">
+              <span>{{val}}</span>
+              <img v-if="passengerTypeIndex != index" src="../../assets/images/trains/kong.png" alt="">
+              <img v-else src="../../assets/images/trains/yes@2x.png" alt="">
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <!--学制-->
+      <div class="selecter" v-show="showEductionalSystem">
+        <div class="box">
+          <div class="box_btn trains-color f32 cf pd">
+            <span @click="showEductionalSystem = false">取消</span>
+            <span>选择乘客类型</span>
+            <span @click="showEductionalSystem = false">确定</span>
+          </div>
+          <ul class="box_sel f24 c66">
+            <li v-for="(val,index) in eductionalSystemArr" :key="index" @click="eductionalSystemIndex = index">
+              <span>{{val}}学制</span>
+              <img v-if="eductionalSystemIndex != index" src="../../assets/images/trains/kong.png" alt="">
+              <img v-else src="../../assets/images/trains/yes@2x.png" alt="">
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- 出生日期时间选择器 -->
+      <picker v-model="visible" :data-items="dateItems" @change="onDateValuesChange">
+        <div class="picker-top-content" slot="top-content">
+          <div class="box_btn trains-color f32 cf pd">
+            <span @click="visible = false">取消</span>
+            <span>选择出生日期</span>
+            <span @click="visible = false">确定</span>
+          </div>
+        </div>
+      </picker>
+
+      <!-- 年份时间选择器 -->
+      <picker v-model="visible1" :data-items="dateItems1" @change="onDateValuesChange1">
+        <div class="picker-top-content" slot="top-content">
+          <div class="box_btn trains-color f32 cf pd">
+            <span @click="visible1 = false">取消</span>
+            <span>选择入学年份</span>
+            <span @click="visible1 = false">确定</span>
+          </div>
+        </div>
+      </picker>
+    </div>
+
+    <TrainsAddSort :sortType="sortType" v-if="showSort" @chooseItem="chooseItem" @close="close"></TrainsAddSort>
+  </div>
+</template>
+
+<script>
+import TrainsAddSort from './TrainsAddSort'
+import { alert } from '../../util/tool'
+import { mapGetters } from 'vuex'
+import * as tools from '../../util/checkParams'
+import _me from '../../fetch/me'
+import _trains from '../../fetch/trains'
+
+export default {
+  data() {
+    let formatTwoDigitInteger = (value) => {
+      value = value.toString()
+      return (value.length === 1 ? '0' : '') + value
+    }
+    let generateYearData = (thisYear) => {
+      let result = []
+      let i = thisYear - 100
+      let end = thisYear + 80
+      for (; i < end; i++) {
+        result.push({
+          value: formatTwoDigitInteger(i) + '年'
+        })
+      }
+      return result
+    }
+    let generateMonthData = () => {
+      var result = []
+      let i = 1
+      for (; i < 13; ++i) {
+        result.push({
+          name: formatTwoDigitInteger(i) + '月'
+        })
+      }
+      return result
+    }
+    let generateDateData = () => {
+      var result = []
+      let i = 1
+      for (; i < 32; ++i) {
+        result.push({
+          name: formatTwoDigitInteger(i) + '日'
+        })
+      }
+      return result
+    }
+    let today = new Date()
+    let thisYear = today.getFullYear()
+    let thisMonth = today.getMonth() + 1
+    let thisDate = today.getDate()
+    let months = generateMonthData()
+    let dates = generateDateData()
+    this.thisYear = thisYear
+    return {
+      showIdType: false,
+      idTypeArr: ['身份证', '护照', '台胞证', '港澳通行证'],
+      idTypeStr: ['', '<span class="cb">*</span>只限港澳居民来往内陆的通行证，需在火车站人工窗口<span class="cb">凭港澳居民通行证取票</span>', '<span class="cb">*</span>只限台湾居民来往内陆的通行证，需在火车站人工窗口<span class="cb">凭回乡证取票</span>', '<span class="cb">*</span>请务必正确填写护照上的证件号码，须在人工窗口 <span class="cb">凭护照取票</span>'],
+      idTypeIndex: 0,
+      showEductionalSystem: false,
+      eductionalSystemArr: [2, 3, 4, 5, 7],
+      eductionalSystemIndex: 0,
+      showPassengerType: false,
+      passengerTypeArr: ['成人票', '儿童票', '学生票'],
+      passengerTypeIndex: 0,
+      isStudent: false,
+      isIdCard: true,
+      isChildren: false,
+      subInfo: {
+        passengerName: '',
+        passengerType: 0,
+        idType: 0,
+        idCard: '',
+        sex: 1,
+        birthday: '请选择出生日期',
+        admissionYear: '请选择入学年份',
+        provinceCode: '',
+        schoolCode: '',
+        preferenceFromStation: '出发城市',
+        preferenceToStation: '到达城市',
+        studentNo: ''
+      },
+      dateItems: [
+        {
+          name: 'value',
+          index: 100,
+          values: generateYearData(thisYear)
+        },
+        {
+          name: 'name',
+          index: thisMonth - 1,
+          values: months
+        },
+        {
+          name: 'name',
+          index: thisDate - 1,
+          values: dates
+        }
+      ],
+      visible: false,
+      dateItems1: [
+        {
+          name: 'value',
+          index: 100,
+          values: generateYearData(thisYear)
+        }
+      ],
+      visible1: false,
+      showSort: false,
+      sortType: 0,
+      chooseProvince: {
+        provinceName: '请选择省份'
+      },
+      chooseSchool: {
+        schoolName: '请选择学校'
+      }
+    }
+  },
+  computed: {
+    ...mapGetters([
+      'loginData'
+    ])
+  },
+  components: {
+    TrainsAddSort
+  },
+  watch: {
+    idTypeIndex(data) {
+      if (data === 0) {
+        this.isIdCard = true
+      } else {
+        this.isIdCard = false
+      }
+    },
+    passengerTypeIndex(data) {
+      if (data === 1) {
+        this.isChildren = true
+        this.isStudent = false
+      } else if (data === 2) {
+        this.isStudent = true
+        this.isChildren = false
+      } else {
+        this.isStudent = false
+        this.isChildren = false
+      }
+    }
+  },
+  mounted() {
+    this.init()
+  },
+  methods: {
+    init() {
+      console.log(this.$route.query)
+      let params = this.$route.query
+      if (params.passengerName) {
+        this.$refs.add.innerHTML = '修改'
+        this.subInfo.admissionYear = params.admissionYear
+        this.subInfo.birthday = params.birthday
+        this.subInfo.passengerName = params.passengerName
+        this.subInfo.idType = params.idType
+        this.subInfo.idCard = params.idCard
+        this.subInfo.sex = params.sex
+        this.eductionalSystemIndex = this.eductionalSystemArr.indexOf(params.eductionalSystem)
+        this.subInfo.preferenceFromStation = params.preferenceFromStation
+        this.subInfo.preferenceToStation = params.preferenceToStation
+        this.subInfo.studentNo = params.studentNo
+        this.chooseProvince.provinceName = params.provinceName
+        this.chooseSchool.schoolName = params.schoolName
+        this.subInfo.schoolCode = params.schoolCode
+        this.subInfo.provinceCode = params.provinceCode
+        this.subInfo.typeindex = params.typeindex
+        this.idTypeIndex = params.idType - 1
+        this.passengerTypeIndex = params.passengerType - 1
+      }
+    },
+    getMaxDate(year, month) {
+      return (new Date(new Date(year, month, 1) - 1)).getDate()
+    },
+    onDateValuesChange(year, month, date) {
+      year = year.value
+      month = month.name
+      date = date.name
+      var maxDate = this.getMaxDate(parseInt(year), parseInt(month))
+      this.dateItems[2].maxScrollValue = maxDate
+      console.log('user ----->', year.replace('年', ''), month.replace('月', ''), date.replace('日', ''))
+      this.subInfo.birthday = year.replace('年', '') + month.replace('月', '') + date.replace('日', '')
+    },
+    onDateValuesChange1(year) {
+      this.subInfo.admissionYear = year.value.replace('年', '')
+    },
+    showSortType(type) {
+      this.showSort = true
+      this.sortType = type
+    },
+    chooseItem(data) {
+      this.showSort = false
+      if (this.sortType === 0) {
+        this.subInfo.provinceCode = data.provinceCode
+        this.chooseProvince = data
+      } else if (this.sortType === 1) {
+        this.subInfo.schoolCode = data.schoolCode
+        this.chooseSchool = data
+      } else if (this.sortType === 2) {
+        this.subInfo.preferenceFromStation = data.name
+      } else if (this.sortType === 3) {
+        this.subInfo.preferenceToStation = data.name
+      }
+    },
+    close() {
+      this.showSort = false
+    },
+    add() {
+      if (tools.isEmpty(this.subInfo.passengerName)) {
+        alert('请输入乘客姓名')
+        return false
+      }
+      if (tools.isEmpty(this.subInfo.idCard)) {
+        alert('请输入证件号码')
+        return false
+      }
+      let data = {
+        passengerName: this.subInfo.passengerName,
+        passengerType: this.passengerTypeIndex + 1,
+        idCard: this.subInfo.idCard,
+        idType: this.idTypeIndex + 1,
+        certType: this.subInfo.idCard,
+        certNo: this.idTypeIndex + 1
+      }
+      if (this.loginData) {
+        data['token'] = this.loginData.token
+      }
+      if (this.passengerTypeIndex === 0 && this.idTypeIndex !== 0 || this.passengerTypeIndex === 1 || this.passengerTypeIndex === 2 && this.idTypeIndex !== 0) {                  // 成人票或者儿童票
+        if (this.subInfo.birthday === '请选择出生日期') {
+          alert('请选择出生日期')
+          return false
+        }
+        data['sex'] = this.subInfo.sex
+        data['birthday'] = this.subInfo.birthday
+        if (this.loginData) {
+          data['sexCode'] = ~this.subInfo.sex + 2
+          data['bornDate'] = parseInt(this.subInfo.birthday)
+        }
+      }
+      if (this.passengerTypeIndex === 2) {
+        if (tools.isEmpty(this.subInfo.provinceCode)) {
+          alert('请选择省份')
+          return false
+        }
+        if (tools.isEmpty(this.subInfo.schoolCode)) {
+          alert('请选择学校')
+          return false
+        }
+        if (tools.isEmpty(this.subInfo.studentNo)) {
+          alert('请填写学号')
+          return false
+        }
+        if (this.subInfo.admissionYear === '请选择入学年份') {
+          alert('请选择入学年份')
+          return false
+        }
+        if (this.subInfo.preferenceFromStation === '出发城市') {
+          alert('请选择出发城市')
+          return false
+        }
+        if (this.subInfo.preferenceToStation === '到达城市') {
+          alert('请选择到达城市')
+          return false
+        }
+        data['provinceCode'] = this.subInfo.provinceCode
+        data['schoolCode'] = this.subInfo.schoolCode
+        data['studentNo'] = this.subInfo.studentNo
+        data['admissionYear'] = this.subInfo.admissionYear
+        data['preferenceFromStation'] = this.subInfo.preferenceFromStation
+        data['preferenceToStation'] = this.subInfo.preferenceToStation
+        data['eductionalSystem'] = this.eductionalSystemArr[this.eductionalSystemIndex]
+      }
+      if (this.$route.query.contactId) {
+        data['contactId'] = this.$route.query.contactId
+      }
+      console.log(data)
+      if (this.$route.query.isLogin) {
+        _trains.modifyTraveler(data).then(res => {
+          location.href = history.back()
+        })
+      } else {
+        _me.updateTrainsPerson(data).then(res => {
+          location.href = history.back()
+        })
+      }
+    }
+  }
+}
+</script>
+
+<style scoped>
+body {
+  height: 100%;
+  padding-bottom: .2rem;
+}
+
+.cb {
+  color: #03a9f4;
+}
+
+.help_icon {
+  position: absolute;
+  right: .3rem;
+  top: 0;
+  height: 100%;
+  width: 1rem;
+}
+
+.help_icon img {
+  position: absolute;
+  right: 0;
+  top: .3rem;
+  width: .4rem;
+}
+
+.name {
+  position: relative;
+}
+
+.add_btn {
+  width: 4rem;
+  line-height: .6rem;
+  border: 1px solid #03a9f4;
+  display: block;
+  margin: .4rem auto;
+  border-radius: .7rem;
+}
+
+.add_btn img {
+  width: .3rem;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.bgf3 {
+  background-color: #f2f7ff;
+}
+
+input[type='text'] {
+  width: 5rem;
+}
+
+.line100 {
+  line-height: 1rem;
+}
+
+.form {
+  margin-top: .5rem;
+}
+
+.bb {
+  border-bottom: 1px solid #f2f7ff;
+}
+
+.mb {
+  margin-bottom: .1rem;
+}
+
+.mt20 {
+  margin-top: .2rem;
+}
+
+.label {
+  width: 1.6rem;
+  display: inline-block;
+}
+
+.cb {
+  color: #03A9F4;
+}
+
+.log {
+  width: 6.9rem;
+  line-height: .8rem;
+  display: block;
+  margin: .3rem auto .1rem;
+  border-radius: .4rem;
+  border: 1px solid #03a9f4;
+}
+
+.none_person {
+  width: 4rem;
+  margin: 1rem auto;
+}
+
+.person_item {
+  background: url("../../assets/images/trains/xg.png") no-repeat .3rem center;
+  -webkit-background-size: .4rem;
+  background-size: .4rem;
+  padding: .2rem .3rem .2rem 1rem;
+  position: relative;
+}
+
+.person_item a {
+  position: absolute;
+  height: .4rem;
+  width: .4rem;
+  top: .4rem;
+  left: .3rem;
+}
+
+.person_item>div {
+  position: absolute;
+  top: .4rem;
+  right: .3rem;
+}
+
+.fix_sel {
+  position: relative;
+}
+
+.fix_sel:after {
+  content: "";
+  width: .17rem;
+  height: .3rem;
+  position: absolute;
+  right: .3rem;
+  top: .4rem;
+  background: url("../../assets/images/trains/right.png");
+  -webkit-background-size: cover;
+  background-size: cover;
+}
+
+.selecter {
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, .7);
+  position: fixed;
+  top: 0;
+  left: 0;
+}
+
+.box {
+  max-height: 5rem;
+  width: 100%;
+  background: #fff;
+  position: absolute;
+  bottom: 0;
+  left: 0;
+}
+
+.box_btn {
+  width: 100%;
+  height: .9rem;
+  line-height: .9rem;
+  display: flex;
+  justify-content: space-between;
+  border: 1px solid #f3f3f3;
+}
+
+.box_sel {
+  line-height: .8rem;
+  overflow: scroll;
+}
+
+.box_sel>li {
+  padding: 0 .3rem;
+}
+
+.box_sel>li:active {
+  background: #f3f3f3;
+}
+
+.box_sel>li>img {
+  width: .4rem;
+  display: inline-block;
+  float: right;
+  margin-top: .14rem;
+}
+
+.wenzi {
+  text-indent: 2em;
+  margin-top: .3rem;
+}
+
+input[type='radio'] {
+  appearance: radio;
+  -moz-appearance: radio;
+  -webkit-appearance: radio;
+  opacity: 0;
+}
+
+.label1 {
+  width: 1rem;
+  display: inline-block;
+  padding-left: .2rem;
+  background: url("../../assets/images/trains/yes@2x.png") no-repeat left center;
+  -webkit-background-size: .3rem;
+  background-size: .3rem;
+}
+
+.label2 {
+  width: 1rem;
+  display: inline-block;
+  padding-left: .2rem;
+  background: url("../../assets/images/trains/kong.png") no-repeat left center;
+  -webkit-background-size: .3rem;
+  background-size: .3rem;
+}
+
+.student {
+  display: none;
+}
+
+.schoolList {
+  width: 100%;
+  height: 100%;
+  position: fixed;
+  top: 0;
+  left: 0;
+  background: #fff;
+  overflow: scroll;
+  display: none;
+  z-index: 99999;
+}
+
+.schoolList>ul {
+  padding-top: .88rem;
+}
+
+.schoolList>ul li {
+  line-height: .8rem;
+}
+
+.schoolList>ul li:active {
+  background: #f3f3f3;
+}
+
+.city_position {
+  line-height: .4rem;
+  position: fixed;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  display: none;
+}
+
+.city_position a {
+  display: block;
+  width: .6rem;
+  text-align: center;
+}
+
+.target-fix {
+  position: relative;
+  top: -44px;
+  display: block;
+  height: 1px;
+  overflow: hidden;
+}
+
+.mask_wrap {
+  height: 100%;
+  position: fixed;
+  top: 0;
+  z-index: 998;
+  display: none;
+}
+
+.mask {
+  background-color: rgba(0, 0, 0, .5);
+  line-height: .5rem;
+  padding: 2rem .6rem 0;
+  height: 100%;
+}
+
+.mask>div {
+  height: 100%;
+  overflow: scroll;
+}
+
+.close img {
+  width: .72rem;
+  height: .72rem;
+  margin: .5rem auto;
+}
+</style>

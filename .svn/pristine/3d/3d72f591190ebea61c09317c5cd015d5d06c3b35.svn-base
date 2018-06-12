@@ -1,0 +1,269 @@
+<template>
+  <div class="trainsinfo bgf3">
+    <header class="trains-color">
+      <router-link :to="getOrderInfoReturnUrl" class="f24 back back1 not_used_common"></router-link>
+      <h1 class="f40 tc category cf">火车票订单</h1>
+    </header>
+    <div class="time_info time_info1 bgf bb">
+      <p class="f36 c33">
+        <span>{{dataList.fromStation}}</span>
+        <span>{{dataList.trainNo}}</span>
+        <span>{{dataList.toStation}}</span>
+      </p>
+      <p class="f50 c33 line100" v-if="dataList.arrivalDate">
+        <span>{{dataList.trainDate.split(' ')[1].split(':').slice(0,2).join(':')}}</span>
+        <span>{{dataList.arrivalDate.split(' ')[1].split(':').slice(0,2).join(':')}}</span>
+      </p>
+      <p class="f30 c33" v-if="dataList.arrivalDate">
+        <span>{{new Date(dataList.trainDate).getMonth()+1}}月{{new Date(dataList.trainDate).getDate()}}日星期{{week[new Date(dataList.trainDate).getDay()]}}</span>
+        <router-link class="tc f24" :to="{path: '/index/trains/timeTable', query: dataList}">列车时刻</router-link>
+        <span>{{new Date(dataList.arrivalDate).getMonth()+1}}月{{new Date(dataList.arrivalDate).getDate()}}日星期{{week[new Date(dataList.arrivalDate).getDay()]}}</span>
+      </p>
+    </div>
+    <div class="refund1" v-show="dataList.isRefund == 1">
+      <router-link to="/order/trains/refundinfo" class="pd bgf f28 line100 refund">
+        <p>
+          <span class="cb">* </span> 您的订单有退款</p>
+        <p>查看退款进度</p>
+      </router-link>
+    </div>
+    <div class="traveller pd bgf mt2">
+      <div class="line100">
+        <p class="f32">乘客信息</p>
+        <p class="f28">取票号:{{dataList.ticketNo}}</p>
+      </div>
+      <div class="bb" v-for="(val,index) in dataList.ticketList" :key="index">
+        <div class="line60">
+          <p class="f32 c33">{{val.passengerName}}</p>
+          <p class="f24 c8e">{{passengerTypeStr[val.passengerType]}}</p>
+        </div>
+        <div class="line60">
+          <p class="f28 c33">{{val.seatClassStr}} {{val.seatNo}}</p>
+          <p class="f32 cb">￥{{val.ticketPrice}}</p>
+        </div>
+        <div class="line60 mb">
+          <p class="f28 cb">{{ticketStr[val.ticketStatus]}}</p>
+          <div class="f26" v-if="val.ticketStatus == 10">
+            <a href="javascript:;" @click="toChangeInfo(val.ticketId)">查看改签单</a>
+          </div>
+          <div class="f26" v-else-if="val.ticketStatus == 4">
+            <a @click="toChangeTrain(val.ticketId)">改签</a>
+            <router-link :to="'/order/trains/refund?ticketId='+val.ticketId">退票</router-link>
+          </div>
+          <div class="f26" v-else-if="val.ticketStatus == 6">
+            <router-link :to="{path: '/index/trains/payTrains', query: {createTime: val.updateTime, ticketId: val.ticketId, returnUrl: $route.returnUrl, orderCode: $route.orderCode, payBusiType: 'payTrainsTicketChange', changPayAgain: true}}">确认支付</router-link>
+            <a href="JavaScript:;" @click="cancelChange(val.ticketId)">取消改签</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="ensure mt2 bgf pd" v-show="dataList.totalInsurePrice > 0">
+      <router-link to="/order/trains/ensure" style="display:block;width:100%;">
+        <div class="line50 fl">
+          <p class="f32 c33">行程保障</p>
+          <p class="f24 c8e">每人 ￥{{dataList.insurePrice}}</p>
+        </div>
+        <div class="line100 cb f32 fr">￥{{dataList.totalInsurePrice}}
+          <span class="c33"> &gt; </span>
+        </div>
+      </router-link>
+    </div>
+
+    <div class="bgf mt2 coupon buyfee"></div>
+    <div class="bgf coupon coupon1 bb">
+      <div class="pd line100" v-show="dataList.orderDiscountAmount > 0">
+        <p class="f28">优惠券抵扣</p>
+        <p class="f28 co">-￥{{dataList.orderDiscountAmount}}</p>
+      </div>
+      <div class="pd line100" v-show="dataList.payPoundageAmount > 0">
+        <p class="f28">手续费</p>
+        <p class="f28">￥{{dataList.payPoundageAmount}}</p>
+      </div>
+      <div class="pd line100">
+        <p class="f28">实付金额</p>
+        <p class="f28">￥{{dataList.totalPrice}}</p>
+      </div>
+    </div>
+
+  </div>
+</template>
+
+<script>
+import { mapGetters, mapActions } from 'vuex'
+import _order from '../../../fetch/order'
+import { alert } from '../../../util/tool'
+import router from '../../../router'
+
+export default {
+  data() {
+    return {
+      dataList: '',
+      week: ['', '一', '二', '三', '四', '五', '六', '日'],
+      passengerTypeStr: ['', '成人票', '儿童票', '学生票'],
+      ticketStr: ['', '未出票', '出票中', '出票失败', '出票成功', '申请改签中', '改签待确认', '支付中', '支付失败', '改签中', '改签成功', '退票中', '退票成功']
+    }
+  },
+  computed: {
+    ...mapGetters([
+      'getOrderInfoReturnUrl',
+      'getOrderCode'
+    ])
+  },
+  mounted() {
+    if (this.$route.query.orderCode) {
+      this.setOrderCode(this.$route.query.orderCode)
+    }
+    if (this.$route.query.returnUrl) {
+      this.setOrderInfoReturnUrl(this.$route.query.returnUrl)
+    }
+    this.init()
+  },
+  methods: {
+    ...mapActions([
+      'setOrderInfoReturnUrl',
+      'setOrderCode'
+    ]),
+    init() {
+      _order.trainsOrderInfo({
+        orderCode: this.getOrderCode
+      }).then(res => {
+        this.dataList = res.result
+      })
+    },
+    cancelChange(ticketId) {
+      _order.cancelChangeTicket({
+        ticketId: ticketId
+      }).then(res => {
+        alert('取消成功')
+        this.init()
+      })
+    },
+    toChangeInfo(ticketId) {
+      router.push({ path: '/order/trains/change', query: { ticketId: ticketId } })
+    },
+    toChangeTrain(ticketId) {
+      let trainsInfo = {
+        fromStation: this.dataList.fromStation,
+        toStation: this.dataList.toStation,
+        trainDate: this.dataList.trainDate.split(' ')[0],
+        weekDay: '星期' + this.week[new Date(this.dataList.trainDate).getDay()],
+        ticketType: 1,
+        isFast: 1,
+        orderCode: this.getOrderCode,
+        ticketId: ticketId,
+        returnUrl: this.$route.path + '?returnUrl=' + this.$route.query.returnUrl + '&orderCode=' + this.$route.query.orderCode
+      }
+      this.$store.dispatch('saveTrainData', trainsInfo)
+      router.push({path: '/index/trains/trainsList', query: trainsInfo})
+      console.log(trainsInfo)
+    }
+  }
+}
+</script>
+
+<style scoped>
+.bgf3 {
+  background: #f2f7ff;
+}
+
+.cb {
+  color: #03A9F4;
+}
+
+.line100 {
+  line-height: 1rem;
+}
+
+.line60 {
+  line-height: .6rem;
+}
+
+.line50 {
+  line-height: .5rem;
+}
+
+.mb {
+  margin-bottom: .1rem;
+}
+
+.mt2 {
+  margin-top: .1rem;
+}
+
+.bb {
+  border-bottom: 1px solid #f2f7ff;
+}
+
+.time_info {
+  padding: .4rem .3rem .2rem;
+}
+
+.time_info>p,
+.refund,
+.traveller>.line100,
+.traveller .line60,
+.ensure,
+.coupon>div {
+  display: flex;
+  justify-content: space-between;
+}
+
+.coupon>div {
+  border-top: 1px solid #f2f7ff;
+}
+
+.time_info>p>a {
+  width: 2.08rem;
+  height: .5rem;
+  background: url("../../../assets/images/trains/time.png");
+  -webkit-background-size: cover;
+  background-size: cover;
+  line-height: .5rem;
+}
+
+.refund>p:last-child {
+  padding-right: .3rem;
+  background: url("../../../assets/images/trains/right.png") no-repeat right center;
+  -webkit-background-size: .17rem;
+  background-size: .17rem;
+}
+
+.traveller>div:first-child {
+  padding-left: .45rem;
+  background: url("../../../assets/images/trains/traveller.png") no-repeat left center;
+  -webkit-background-size: .34rem;
+  background-size: .34rem;
+}
+
+.traveller a {
+  padding: .05rem .2rem;
+  border-radius: .5rem;
+  border: 1px solid #03A9F4;
+  margin-left: .2rem;
+}
+
+.ensure {
+  padding-left: 1rem;
+  background: url("../../../assets/images/trains/ensure.png") .3rem center no-repeat;
+  -webkit-background-size: .4rem;
+  background-size: .4rem;
+  background-color: #fff;
+}
+
+.bgf>.ensure {
+  padding-left: 1rem;
+  background: url("../../../assets/images/trains/ticket.png") .3rem center no-repeat;
+  -webkit-background-size: .4rem;
+  background-size: .4rem;
+  background-color: #fff;
+}
+
+.dizhi>div:first-child {
+  width: 1.7rem;
+}
+
+.dizhi>div:last-child {
+  width: 5rem;
+}
+</style>

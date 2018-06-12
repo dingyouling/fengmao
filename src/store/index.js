@@ -1,0 +1,24 @@
+import Vue from 'vue'
+import Vuex from 'vuex'
+
+Vue.use(Vuex)
+
+import common from './modules/com'
+import login from './modules/login'
+import oil from './modules/oil'
+import prod from './modules/prod'
+import pay from './modules/pay'
+import trainsorder from './modules/trainsorder'
+import trains from './modules/trains'
+
+export default new Vuex.Store({
+  modules: {
+    common,
+    login,
+    oil,
+    prod,
+    pay,
+    trainsorder,
+    trains
+  }
+})

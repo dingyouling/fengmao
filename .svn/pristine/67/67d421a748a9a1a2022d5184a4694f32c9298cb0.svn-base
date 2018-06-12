@@ -1,0 +1,56 @@
+<template>
+  <div class="cityLis">
+    <header class="bgf head">
+      <a href="javascript:;" class="f24 back"></a>
+      <h1 class="f40 tc">{{titleArr[sortType]}}</h1>
+    </header>
+    <div class="aaa">
+      <Sort @setListItem="setItem" :sortList="dataList"></Sort>
+    </div>
+  </div>
+</template>
+  
+<script>
+import Sort from '../Sort'
+import { mapActions } from 'vuex'
+import { provinceData, schoolData, stationData } from '../../assets/js/addTrainsData'
+
+export default {
+  data() {
+    return {
+      titleArr: ['城市选择', '学校选择', '起始站选择', '终点站选择'],
+      dataList: []
+    }
+  },
+  props: [
+    'sortType'
+  ],
+  components: {
+    Sort
+  },
+  mounted() {
+    if (this.sortType === 0) {
+      this.dataList = provinceData
+    } else if (this.sortType === 1) {
+      this.dataList = schoolData
+    } else {
+      this.dataList = stationData
+    }
+    document.getElementsByClassName('aaa')[0].style.height = (document.documentElement.clientHeight - document.getElementsByClassName('head')[0].offsetHeight) + 'px'
+  },
+  methods: {
+    ...mapActions([
+      'setChooseItem'
+    ]),
+    setItem(data) {
+      this.setChooseItem(data)
+      this.$emit('chooseItem', data)
+    }
+  }
+}
+</script>
+  
+<style>
+
+</style>
+  

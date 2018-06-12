@@ -1,0 +1,723 @@
+<template>
+	<div class="trainL">
+		<header class="trains-color cf">
+			<a class="f24 back back1" @click="toBack"></a>
+	    <h1 class="tc">
+	    	<div class="cf f36">{{ trainsInfo.fromStation }}-{{ trainsInfo.toStation }}<span v-if="$route.query.trainDate">(改签)</span></div>
+	    	<div class="f20 cf">共{{ filtercount }}趟列车</div>
+	    </h1>
+	  </header>
+		<div class="trains-color clearfix cf trains_li_header tc f28">
+	  	<div class="pd">
+	  		<div class="fl date_prev">
+	  			<div @click="addDay(trainsInfo.trainDate, -1)">前一天</div>
+	  		</div>
+	  		<div class="fl cl">
+	  			<router-link :to="{ name: '火车日期', params: { nowDate: 'nowDate=' + trainsInfo.trainDate }}">{{ trainsInfo.trainDate }}{{ trainsInfo.weekDay }}</router-link>
+	  		</div>
+	  		<div class="fr date_next">
+	  			<div @click="addDay(trainsInfo.trainDate, 1)">后一天</div>
+	  		</div>
+	  	</div>
+	  </div>
+	  <div class="pd trainsList">
+	  	<div class="trains_li bgf trains_can_buy" v-for="(val, i) in filterList" :key="i" @click="chooseTrainFuc(val)">
+	  		<div class="clearfix train_top">
+	  			<div class="c33 fl">
+	  				<div class="f32">{{ val.fromStation }}</div>
+	  				<div class="f36">{{ val.fromTime }}</div>
+	  			</div>
+	  			<div class="fl f24 tc trains_last">
+	  				<div class="c33">{{ val.trainNo }}</div>
+	  				<div class="c8e">{{ val.runTimeSpan }}</div>
+	  			</div>
+	  			<div class="fl tr">
+	  				<div class="f32">{{ val.toStation }}</div>
+	  				<div class="f36">{{ val.toTime }}</div>
+	  			</div>
+	  			<div class="f38 cl tr">
+	  				<div class="f24">
+	  					￥
+	  					<span class="f36">{{ val.minPrice }}</span>
+	  				</div>
+	  			</div>
+	  		</div>
+	  		<div class="standby_tic c33 f24 class_tickets tc clearfix" v-show="isSeatRemain">
+	  			<div class="fl" v-for="(value, j) in val.tickets">{{ value.seatName }}:{{ value.seats }}张</div>
+	  		</div>
+	  		<div class="standby_tic c33 f24 class_price tc clearfix" v-show="!isSeatRemain">
+	  			<div class="fl" v-for="(value, j) in val.tickets" :style="{width: '33.33%'}">{{ value.seatName }}:￥{{ value.price }}</div>
+	  		</div>
+	  	</div>
+	  	<div class="tc f24 c8e" v-show="noData">
+        <img src="../../../assets/images/trains/none_list.png" style="margin: 1.5rem auto .5rem;width: 60%;">
+        <p>无相关车次信息</p>
+      </div>
+	  </div>
+	  <nav class="bar bar-tab f26 tc train-bar-tab">
+      <a class="tab-item external" @click="showFilterPop = !showFilterPop">
+        <img src="../../../assets/images/trains/trains_icon09@2x.png" alt="">
+        <span class="tab-label">筛选</span>
+      </a>
+      <a class="tab-item external reorderBtn" @click="sortByTime(filterList)" :class="{active: isActive}">
+        <img src="../../../assets/images/trains/trains_icon10@2x.png" alt="">
+        <span class="tab-label">时间从早到晚</span>
+      </a>
+      <a class="tab-item external reorderBtn" @click="sortByRunTime(filterList)" :class="{active: !isActive}">
+        <img src="../../../assets/images/trains/trains_icon11@2x.png" alt="">
+        <span class="tab-label">历时</span>
+      </a>
+      <a class="tab-item external" @click="isSeatRemain = !isSeatRemain">
+        <span class="tab-label tab-label2" :class="{active: isSeatRemain}">余票</span>
+        <img src="../../../assets/images/trains/trains_icon12@2x.png" alt="">
+        <span class="tab-label tab-label1" :class="{active: !isSeatRemain}">票价</span>
+      </a>
+  	</nav>
+  	<!-- 筛选 -->
+		<div class="popover" v-show="showFilterPop">
+    	<div>
+    		<div class="pop_content bgf">
+    			<div class="trains-color cf clearfix df f32 pop_header pd">
+    				<div @click="cancelCheck">取消</div>
+    				<div class="f24 cl">
+    					<div class="bgf tc" @click="checkedSeat = [], checkedType = [], hasSeat = false">清空已选</div>
+    				</div>
+    				<div class="tr" @click="confirmCheck()">确定</div>
+    			</div>
+    			<div class="pop-body">
+    				<!-- 车次筛选 -->
+			    	<div>
+			    		<div class="train_yx f24 c8e">
+			    			<span>{{trainType.type}}</span>
+			    		</div>
+			    		<div class="f32 c33 trains_option clearfix">
+				    		<div class="fl" v-for="(val, i) in trainType.name">
+									<label>
+										<div class="clearfix">
+											<div class="label_wrap fl">
+												<input type="checkbox" :value="val.match" :id="i" v-model="checkedType">
+												<i></i>
+											</div>
+											<div class="fl">{{val.text}}</div>
+										</div>
+									</label>
+					    	</div>
+					    </div>
+			    	</div>
+			    	<!-- 坐席筛选 -->
+			    	<div>
+			    		<div class="train_yx f24 c8e">
+			    			<span>{{seatType.type}}</span>
+			    		</div>
+			    		<div class="f32 c33 trains_option clearfix">
+				    		<div class="fl" v-for="(val, i) in seatType.name">
+									<label>
+										<div class="clearfix">
+											<div class="label_wrap fl">
+												<input type="checkbox" :value="val.match" :id="i" v-model="checkedSeat">
+												<i></i>
+											</div>
+											<div class="fl">{{val.text}}</div>
+										</div>
+									</label>
+					    	</div>
+					    </div>
+			    	</div>
+			    	<!-- 发车时间筛选 -->
+			    	<div class="train_yx f24 c8e">
+		    			<span>乘车时间</span>
+		    		</div>
+				    <div class="tc cl f24">
+				    	<span id="begin_time">{{ft + ':00'}}</span>
+				    	<span>-</span>
+				    	<span id="end_time">{{tt + ':00'}}</span>
+				    </div>
+				    <div class="slider_inter">
+              <div class="tc">选择最早时间</div>
+              <div class="tc">
+                <input type="range" min="0" max="24" value="0" v-model="ft">
+              </div>
+              <div class="mt20">
+                <img src="../../../assets/images/trains/trains_icon21@2x.png" alt="">
+                <div class="f20 clearfix">
+                  <div class="fl">00:00</div>
+                  <div class="fl">06:00</div>
+                  <div class="fl tc">12:00</div>
+                  <div class="fl tr">18:00</div>
+                  <div class="fl tr">12:00</div>
+                </div>
+              </div>
+              <div class="tc">选择最晚时间</div>
+              <div class="tc">
+                <input type="range" min="0" max="24" value="24" v-model="tt">
+              </div>
+              <div class="mt20">
+                <img src="../../../assets/images/trains/trains_icon21@2x.png" alt="">
+                <div class="f20 clearfix">
+                  <div class="fl">00:00</div>
+                  <div class="fl">06:00</div>
+                  <div class="fl tc">12:00</div>
+                  <div class="fl tr">18:00</div>
+                  <div class="fl tr">12:00</div>
+                </div>
+              </div>
+				    </div>
+			    	<div class="f32 c33 trains_option clearfix" id="train_ticket">
+			    		<div class="fl">
+			    			<label>
+									<div class="clearfix">
+										<div class="label_wrap fl">
+											<input type="checkbox" v-model="hasSeat">
+											<i></i>
+										</div>
+										<div class="fl">只看有票</div>
+									</div>
+								</label>
+			    		</div>
+			    	</div>
+			    </div>
+    		</div>
+    	</div>
+    	<div class="mask"></div>
+    </div>
+	</div>
+</template>
+
+<script>
+
+import _trains from '../../../fetch/trains.js'
+import { alert } from '../../../util/tool.js'
+import router from '../../../router'
+import { mapGetters } from 'vuex'
+
+export default {
+  data() {
+    return {
+      ft: 0,
+      tt: 24,
+      allTrainsData: null,
+      trainsList: null,
+      filterList: this.trainsList,
+      showFilterPop: false,
+      noData: false,
+      totalCount: 0,
+      filtercount: 0,
+      sevenDay: ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'],
+      trainType: {
+        type: '车次类型',
+        name: [
+          {
+            text: '高铁(G/C)',
+            match: 'GD,C'
+          },
+          {
+            text: '动车(D)',
+            match: 'D'
+          },
+          {
+            text: '普通(Z/K/T)',
+            match: 'KT,KKS,KPK,KPM,KS,PK,PM,Z'
+          },
+          {
+            text: '其他(L/Y等)',
+            match: 'XGZ'
+          }
+        ]
+      },
+      seatType: {
+        type: '坐席类型',
+        name: [
+          {
+            text: '硬座',
+            match: 'hardseat'
+          },
+          {
+            text: '硬卧',
+            match: 'hardsleeperup,hardsleepermid,hardsleeperdown'
+          },
+          {
+            text: '软座',
+            match: 'softseat'
+          },
+          {
+            text: '软卧',
+            match: 'softsleeperup,softsleeperdown,advancedsoftsleeper'
+          },
+          {
+            text: '二等座',
+            match: 'secondseat'
+          },
+          {
+            text: '一等座',
+            match: 'firstseat'
+          },
+          {
+            text: '商务座',
+            match: 'businessseat'
+          },
+          {
+            text: '特等座',
+            match: 'specialseat'
+          },
+          {
+            text: '无座',
+            match: 'noseat'
+          },
+          {
+            text: '其他',
+            match: 'otherseat'
+          }
+        ]
+      },
+      checkedType: [],
+      checkedSeat: [],
+      hasSeat: false,
+      isActive: true,
+      isSeatRemain: true,
+      chooseTrain: null
+    }
+  },
+  computed: {
+    ...mapGetters([
+      'trainsInfo'
+    ])
+  },
+  mounted() {
+    this.getTrainsList()
+  },
+  methods: {
+    toBack() {
+      if (this.$route.query.trainDate) {
+        router.push(this.$route.query.returnUrl)
+      } else {
+        router.push({path: '/index/trains'})
+      }
+    },
+    getTrainsList() {
+      _trains.findTrainByStation(this.trainsInfo).then(res => {
+        if (res.errDesc === '无车次数据') {
+          this.totalCount = 0
+        } else {
+          this.totalCount = res.result.totalCount
+          var result = []
+          for (var i = 0; i < res.result.trains.length; i++) {
+            if (res.result.trains[i].fromTime !== '--') {
+              res.result.trains[i].runTimeSpan = parseInt(res.result.trains[i].runTimeSpan / 60) + '时' + parseInt(res.result.trains[i].runTimeSpan % 60) + '分'
+              result.push(res.result.trains[i])
+            }
+          }
+          this.trainsList = result
+          this.filter(result)
+          this.allTrainsData = res.result
+        }
+      }).catch(error => {
+        console.log('error' + error)
+        this.noData = true
+      })
+    },
+    addDay(dateStr, days) {
+      var date = new Date(dateStr.replace(/-/g, '/'))
+      date = new Date((date.getTime() / 1000 + (24 * 60 * 60 * days)) * 1000)
+      var month = (date.getMonth() + 1) < 10 ? '0' + (date.getMonth() + 1) : (date.getMonth() + 1)
+      var day = date.getDate() < 10 ? '0' + date.getDate() : date.getDate()
+      if (new Date(date.getFullYear() + '-' + month + '-' + day) < new Date((new Date().getTime() / 1000 + (24 * 60 * 60 * -1)) * 1000)) {
+        alert('发车日期无效')
+      } else {
+        this.trainsInfo.trainDate = date.getFullYear() + '-' + month + '-' + day
+        this.trainsInfo.weekDay = this.sevenDay[date.getDay()]
+        this.$store.dispatch('saveTrainData', this.trainsInfo)
+        this.getTrainsList()
+      }
+    },
+    chooseTrainFuc(val) {
+      this.chooseTrain = val
+      this.chooseTrain.queryKey = this.allTrainsData.queryKey
+      let arrivalDate = new Date((new Date(this.trainsInfo.trainDate + ' ' + val.fromTime)).getTime() + parseInt(val.runTimeSpan) * 60 * 1000)
+      this.chooseTrain.arrivalDate = arrivalDate.getFullYear() + '-' + ((arrivalDate.getMonth() + 1) < 10 ? '0' + (arrivalDate.getMonth() + 1) : (arrivalDate.getMonth() + 1)) + '-' + (arrivalDate.getDate() < 10 ? '0' + arrivalDate.getDate() : arrivalDate.getDate())
+      this.chooseTrain.arrivalWeek = this.sevenDay[arrivalDate.getDay()]
+      this.$store.dispatch('setChooseTrain', this.chooseTrain)
+      if (this.$route.query.trainDate) {
+        router.push({path: '/index/trains/trainInfo', query: this.$route.query})
+      } else {
+        router.push({path: '/index/trains/trainInfo'})
+      }
+    },
+    cancelCheck() {
+      this.checkedType = []
+      this.checkedSeat = []
+      this.showFilterPop = !this.showFilterPop
+    },
+    confirmCheck() {
+      this.showFilterPop = !this.showFilterPop
+      this.filter(this.trainsList)
+    },
+    sortByTime(data) {
+      this.isActive = true
+      if (data.length > 0) {
+        data.sort(function(a, b) {
+          return a.fromTime.localeCompare(b.fromTime)
+        })
+      }
+    },
+    sortByRunTime(data) {
+      this.isActive = false
+      if (data.length > 0) {
+        data.sort(function(a, b) {
+          if (parseInt(a.runTimeSpan) > parseInt(b.runTimeSpan)) {
+            return 1
+          } else if (parseInt(a.runTimeSpan) < parseInt(b.runTimeSpan)) {
+            return -1
+          } else {
+            return 0
+          }
+        })
+      }
+    },
+    filter(data) {
+      var trainClass = this.checkedType.toString() + ','
+      if (this.trainsInfo.isFast === 2) {
+        trainClass += 'GD,C,D,'
+      }
+      var trainSeats = this.checkedSeat.toString() + ','
+      var resultTrains = []
+      for (var i = 0; i < this.trainsList.length; i++) {
+        var train = this.trainsList[i]
+        var flag = true
+        var beginSecond = this.ft * 60
+        var endSecond = this.tt * 60
+        /* 车次类型筛选 */
+        if (trainClass !== ',') {
+          flag = false
+          if ((',' + trainClass).indexOf(',' + train.trainClass + ',') >= 0) {
+            flag = true
+          }
+        }
+        /* 坐席类别 */
+        if (trainSeats !== ',') {
+          flag = false
+          var seatClassArr = train.seatClass.split(',')
+          for (var j = 0; j < seatClassArr.length; j++) {
+            if (trainSeats.indexOf(seatClassArr[j]) >= 0) {
+              flag = true
+              break
+            }
+          }
+        }
+        /* 出发时间 */
+        if (beginSecond > 0 || endSecond < 1440) {
+          flag = false
+          var trainSecond = parseInt(train.fromTime.split(':')[0] * 60) + parseInt(train.fromTime.split(':')[1])
+          if (trainSecond >= beginSecond && trainSecond <= endSecond) {
+            flag = true
+          }
+        }
+        /* 是否有票 */
+        if (this.hasSeat) {
+          flag = false
+          if (train.seats > 0) {
+            flag = true
+          }
+        }
+        if (flag) {
+          resultTrains.push(train)
+        }
+      }
+      this.filterList = resultTrains
+      this.filtercount = resultTrains.length
+      if (resultTrains.length === 0) {
+        this.noData = true
+      } else {
+        this.noData = false
+      }
+    }
+  }
+}
+</script>
+
+<style scoped>
+body{
+	min-height: 100%;
+}
+header {
+	border-bottom:0;
+}
+header .f20{
+	line-height: .3rem;
+}
+header .f36{
+	line-height: .5rem;
+	margin-top: .08rem;
+}
+.trainsList{
+	padding-top: .88rem;
+	padding-bottom: 1rem;
+	background-color: #f3f3f3;
+	min-height: 100%;
+}
+.trains_li_header{
+	height: .9rem;
+	line-height: .9rem;
+	position: fixed;
+	top:.88rem;
+	left: 0;
+	width:100%;
+}
+.trains_li_header .cl{
+	width: 2.8rem;
+	height: .6rem;
+	border-radius: .3rem;
+	line-height: .6rem;
+	left: 50%;
+	top: 50%;
+	transform:translate(-50%,-50%);
+	-webkit-transform:translate(-50%,-50%);
+	position: absolute;
+	background:#fff url(../../../assets/images/trains/trains_icon07@2x.png) .2rem center no-repeat;
+	-webkit-background-size: .27rem .27rem;
+	background-size: .27rem .27rem;
+}
+.trains_li_header .cl div{
+	padding-left: .3rem;
+}
+.date_prev{
+	padding-left: .2rem;
+	background:url(../../../assets/images/trains/train_prev.png) left center no-repeat;
+	-webkit-background-size: .13rem .25rem;
+	background-size: .13rem .25rem;
+}
+.date_next{
+	padding-right: .2rem;
+	background:url(../../../assets/images/trains/train_next.png) right center no-repeat;
+	-webkit-background-size: .13rem .25rem;
+	background-size: .13rem .25rem;
+}
+.trains_li{
+	margin:.2rem 0;
+	border-radius: 5px;
+	background-color: #fff;
+	display: block;
+}
+.trains_li > div.train_top{
+	display: -webkit-flex;
+	display: -moz-flex;
+	display: -ms-flex;
+	display: -o-flex;
+	display: flex;
+}
+.standby_tic{
+	line-height: .6rem;
+}
+.standby_tic div{
+	width: 25%;
+}
+.trains_li > div.train_top > div{
+	flex:1;
+}
+.trains_last{
+	background:url(../../../assets/images/trains/trains_icon08@2x.png) center center no-repeat;
+	-webkit-background-size: .8rem .14rem;
+	background-size: .8rem .14rem;
+	line-height: .46rem;
+}
+.trains_li > .train_top{
+	border-bottom: dashed 1px #dedfe0;
+	padding: .2rem;
+}
+.bar-tab{
+	background-color: #37474f;
+}
+.bar-tab .tab-item{
+	color: #fff;
+}
+.bar-tab .active{
+	color: #03a9f4;
+}
+.bar-tab .tab-item.active .active{
+	color: #03a9f4;
+}
+.train-bar-tab .active span.active{
+	color: #03a9f4;
+}
+.bar-tab .tab-item img{
+	width: .3rem;
+	height: auto;
+}
+.bar-tab .tab-item:last-child img{
+	width: .55rem;
+}
+.bar-tab .tab-item:last-child{
+	position: relative;
+}
+.bar-tab .tab-item:last-child span{
+	position: absolute;
+	line-height: .4rem;
+	top: .1rem;
+	right:1.1rem;
+}
+.bar-tab .tab-item:last-child span.tab-label1{
+	top: .5rem;
+	right:.45rem;
+}
+.trains_option > div{
+	width: 50%;
+}
+.trains_option > div.label_wrap{
+	width: .4rem;
+	height: .4rem;
+}
+.trains_option .label_wrap input{
+	display: none;
+}
+.trains_option .label_wrap input + i{
+	margin: .2rem .2rem 0 0;
+	width: .4rem;
+	height: .4rem;
+	display: block;
+	background: url(../../../assets/images/trains/kong.png) center no-repeat;
+	-webkit-background-size: .4rem auto;
+	background-size: .4rem auto;
+}
+.trains_option .label_wrap input:checked + i{
+	background: url(../../../assets/images/trains/yes@2x.png) center no-repeat;
+	-webkit-background-size: .4rem auto;
+	background-size: .4rem auto;
+}
+.tab{
+	line-height: .88rem;
+}
+.tab>p{
+	width:50%;
+	float:left;
+	text-align: center;
+	border-bottom: 1px solid #fff;
+}
+.tab .active{
+	border-color:#03A9F4;
+	color:#03A9F4;
+}
+.confirm{
+	width:100%;
+	height:1rem;
+	position: fixed;
+	bottom:0;
+	left:0;
+	line-height:1rem;
+	background: #03A9F4 ;
+}
+.slider_inter{
+	padding: .3rem .6rem;
+  color: #8e8e8e;
+}
+.slider_inter .mt20{
+  margin-bottom: .2rem;
+}
+.slider_inter img{
+	width: 100%;
+}
+.slider_inter .f20>div{
+	width: 20%;
+}
+.mt20{
+	margin-top: .4rem;
+}
+.trains_option label > div img{
+	width: .4rem;
+	margin-right: .2rem;
+	margin-top: .2rem;
+}
+.sale_note{
+	line-height:.5rem;
+}
+.mask{
+	position: fixed;
+    height: 100%;
+    width: 100%;
+    top: 0px;
+    left: 0px;
+    background-color: rgba(0, 0, 0, 0.54);
+    z-index: 910;
+}
+.pop_content{
+    position: fixed;
+    width: 100%;
+    left: 0px;
+    z-index: 920;
+    overflow: auto;
+    max-height: 80%;
+    bottom: 0px;
+    opacity: 1;
+}
+.pop_header{
+	line-height: .9rem;
+	position: relative;
+	left: 0;
+	top: 0;
+	width: 100%;
+}
+.pop_header .tc{
+	height: .5rem;
+	line-height: .5rem;
+	margin: .2rem auto 0;
+	border-radius: .25rem;
+	background: #fff url(../../../assets/images/trains/add_contact.png) .2rem center no-repeat;
+	-webkit-background-size: .31rem .31rem;
+	background-size: .31rem .31rem;
+	padding-left: .3rem;
+}
+.pop_header .tc a{
+	display: block;
+}
+.pop-body{
+	height:8rem;
+	overflow: scroll;
+}
+.train_yx{
+	border-top: solid #dedfe0 1px;
+	margin-top: .4rem;
+	position: relative;
+	height:.4rem;
+}
+.train_yx span{
+	position: absolute;
+	background-color: #fff;
+	padding: 0 .3rem;
+	top: -.15rem;
+	left: 50%;
+	transform: translateX(-50%);
+	-webkit-transform: translateX(-50%);
+}
+.trains_option{
+	line-height: .8rem;
+}
+.trains_option label > div{
+	padding-left: .3rem;
+	position: relative;
+}
+.pop_body{
+	height: 100%;
+	overflow:auto;
+}
+input[type=range] {
+  width: 6.5rem;
+  border-radius: .1rem;
+  background: #03A9F4;
+  background-size: 0% 100%;
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+}
+input[type=range]::-webkit-slider-runnable-track {
+  height: .2rem;
+  border-radius: .1rem;
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  height: .4rem;
+  width: .4rem;
+  margin-top: -.1rem;
+  background: #ffffff; 
+  border-radius: 50%;
+  border: solid 0.125em rgba(205, 224, 230, 0.5);
+  box-shadow: 0 .125em .125em #3b4547;
+}
+</style>

@@ -1,0 +1,576 @@
+<template>
+  <div class="ordertrains">
+    <div v-show="isShow">
+      <header class="bgf">
+        <router-link :to="getOrderListReturnUrl" class="f24 back"></router-link>
+        <h1 class="f40 tc">火车票订单</h1>
+        <a href="javascript:void(0);" class="c33 f40 sel" @click="selShow=true">筛选</a>
+      </header>
+      <Scroll :on-refresh="onRefresh" :on-infinite="onInfinite" :dataList="scrollData" v-show="!noData">
+        <div class="pd aaa">
+          <div class="order_index_item" v-for="(val,index) in dataList" :key="index">
+            <div v-if="val.orderStatus == 1">
+              <div class="order_index_item_img bgf"><img src="../../assets/images/trains/trains_order.png" alt=""></div>
+              <div class="order_index_item_1 f28 bgf pd tr trains-color">
+                <div class="cf">订单号 :
+                  <span>{{val.orderCode}}</span>
+                </div>
+              </div>
+              <div class="order_index_item_2">
+                <div class="c33 f36 clearfix">
+                  <p class="fl p" id="train_order_from_to">{{val.fromStation}}-{{val.toStation}}({{val.trainNo}})</p>
+                  <p class="fr cb" id="train_order_price">￥{{val.orderPrice}}</p>
+                </div>
+                <div class="f28 c8e clearfix order_index_trains">
+                  <p class="fr f28 cb" id="train_order_status">{{orderStatusStr[val.orderStatus]}}</p>
+                </div>
+                <div class="f28 c8e clearfix ">
+                  <p class="fl" id="train_order_creat_time">{{val.createTime}}</p>
+                  <div class="fr co">
+                    <a href="" class="cb border_b">查看</a>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div v-else-if="val.orderStatus == 2">
+              <div class="order_index_item_img bgf"><img src="../../assets/images/trains/trains_order.png" alt=""></div>
+              <div class="order_index_item_1 f28 bgf pd tr trains-color">
+                <div class="cf">订单号 :
+                  <span>{{val.orderCode}}</span>
+                </div>
+              </div>
+              <div class="order_index_item_2">
+                <div class="c33 f36 clearfix">
+                  <p class="fl p" id="train_order_from_to">{{val.fromStation}}-{{val.toStation}}({{val.trainNo}})</p>
+                  <p class="fr cb" id="train_order_price">￥{{val.orderPrice}}</p>
+                </div>
+                <div class="f28 c8e clearfix order_index_trains">
+                  <p class="fr f28 cb" id="train_order_status">{{orderStatusStr[val.orderStatus]}}</p>
+                </div>
+                <div class="f28 c8e clearfix ">
+                  <p class="fl" id="train_order_creat_time">{{val.createTime}}</p>
+                  <div class="fr co order_handle">
+                    <a href="javascript:;" class="c8e border_c cancel_order" @click="cancelTrainsOrder(val.orderCode)">取消订单</a>
+                    <router-link :to="{path: '/index/trains/payTrains', query: {orderCode: val.orderCode, createTime: val.createTime, payBusiType: 'payTrainsTicket', payAgain: true}}" class="cb border_b pay_order">去支付</router-link>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <router-link :to="'/order/trains/info?returnUrl='+$route.path+'&orderCode='+val.orderCode" v-else>
+              <div class="order_index_item_img bgf"><img src="../../assets/images/trains/trains_order.png" alt=""></div>
+              <div class="order_index_item_1 f28 bgf pd tr trains-color">
+                <div class="cf">订单号 :
+                  <span>{{val.orderCode}}</span>
+                </div>
+              </div>
+              <div class="order_index_item_2">
+                <div class="c33 f36 clearfix">
+                  <p class="fl p" id="train_order_from_to">{{val.fromStation}}-{{val.toStation}}({{val.trainNo}})</p>
+                  <p class="fr cb" id="train_order_price">￥{{val.orderPrice}}</p>
+                </div>
+                <div class="f28 c8e clearfix order_index_trains">
+                  <p class="fr f28 cb" id="train_order_status">{{orderStatusStr[val.orderStatus]}}</p>
+                </div>
+                <div class="f28 c8e clearfix ">
+                  <p class="fl" id="train_order_creat_time">{{val.createTime}}</p>
+                </div>
+              </div>
+            </router-link>
+          </div>
+        </div>
+      </Scroll>
+      <div class="index_sel" v-show="selShow">
+        <transition enter-active-class="animated fadeInRight" leave-active-class="animated fadeOutRight">
+          <div class="sel_box bgf" style="left: 20%;" v-show="selShow">
+            <div class="sel_item pd">
+              <p class="f24 c33">请输入订单号</p>
+              <input class="tc" id="cardNumber" v-model="subInfo.orderCode">
+            </div>
+            <div class="sel_item sel_item1 pd clearfix">
+              <p class="f24 c33">时间筛选</p>
+              <div class="f24 tc c33 bgf3 fl orderTime" :class="{active:isTrains}" @click="isTrains = true">下单时间</div>
+              <div class="f24 tc c33 bgf3 fl ticketTime" :class="{active:!isTrains}" @click="isTrains = false">乘车时间</div>
+              <input type="text" v-if="isTrains" @click="calendar4.show=true" placeholder="请选择开始日期与结束日期" :value="calendar4.display" id="user_age" readonly class="input c8e">
+              <input type="text" v-else @click="calendar5.show=true" placeholder="请选择开始日期与结束日期" :value="calendar5.display" id="user_age" readonly class="input c8e">
+            </div>
+            <div class="sel_item pd clearfix marb100">
+              <p class="f24 c33">订单状态</p>
+              <div class="f24 tc c33 bgf3 fl" @click="subInfo.orderStatus = 0" :class="{active:subInfo.orderStatus == 0}">全部</div>
+              <div class="f24 tc c33 bgf3 fl" @click="subInfo.orderStatus = 8" :class="{active:subInfo.orderStatus == 8}">购票成功</div>
+            </div>
+            <div class="sel_sub clearfix">
+              <div class="fl f32 tc co" id="selReset" @click="reset">重置</div>
+              <div class="fl f32 tc bgo cf" id="selects" @click="search">筛选</div>
+            </div>
+          </div>
+        </transition>
+        <div class="close" @click="selShow=false"></div>
+      </div>
+      <div style="width:3.7rem;height:5rem;margin:1rem auto;position:absolute;top:1rem;left:50%;margin-left:-1.85rem;z-index:99;" v-show="noData">
+        <img style="width:100%;height:3.7rem;margin-bottom: .3rem;" src="../../assets/images/order/dingdan.png" alt="">
+        <p class="f30 c8e tc">您还没有任何信息~</p>
+      </div>
+      <transition name="fade">
+        <div class="calendar-dialog" v-if="calendar4.show">
+          <div class="calendar-dialog-mask"></div>
+          <div class="calendar-dialog-body">
+            <calendar :range="calendar4.range" :zero="calendar4.zero" :lunar="calendar4.lunar" :value="calendar4.value" @select="calendar4.select"></calendar>
+          </div>
+        </div>
+        <div class="calendar-dialog" v-else-if="calendar5.show">
+          <div class="calendar-dialog-mask"></div>
+          <div class="calendar-dialog-body">
+            <calendar :range="calendar5.range" :zero="calendar5.zero" :lunar="calendar5.lunar" :value="calendar5.value" @select="calendar5.select"></calendar>
+          </div>
+        </div>
+      </transition>
+    </div>
+    <router-view></router-view>
+  </div>
+</template>
+
+<script>
+import Scroll from '@/components/Scroll'
+import Calendar from '@/components/Calendar'
+
+import _order from '../../fetch/order'
+
+import { alert } from '../../util/tool'
+
+import { mapGetters, mapActions } from 'vuex'
+
+export default {
+  data() {
+    return {
+      orderStatusStr: ['', '占座中', '占座成功', '占座失败', '支付中', '支付失败', '出票中', '出票失败', '出票成功', '已取消'],
+      scrollData: {
+        noFlag: false // 暂无更多数据显示
+      },
+      subInfo: {
+        beginDate: '',
+        endate: '',
+        beginTrainDate: '',
+        endTrainDate: '',
+        orderCode: '',
+        orderStatus: 0,
+        page: 1,
+        queryType: 0
+      },
+      isTrains: true,
+      dataList: [],
+      isLase: false,
+      calendar4: {      // 下单时间
+        display: '',
+        range: true,
+        show: false,
+        zero: true,
+        value: [], // 默认日期
+        lunar: false, // 显示农历
+        select: (begin, end) => {
+          this.calendar4.show = false
+          this.calendar4.value = [begin, end]
+          this.calendar4.display = begin.join('/') + ' ~ ' + end.join('/')
+        }
+      },
+      calendar5: {     // 乘车时间
+        display: '',
+        range: true,
+        show: false,
+        zero: true,
+        value: [], // 默认日期
+        lunar: false, // 显示农历
+        select: (begin, end) => {
+          this.calendar5.show = false
+          this.calendar5.value = [begin, end]
+          this.calendar5.display = begin.join('/') + ' ~ ' + end.join('/')
+        }
+      },
+      selShow: false,
+      noData: false
+    }
+  },
+  components: {
+    Scroll,
+    Calendar
+  },
+  computed: {
+    ...mapGetters([
+      'getOrderListReturnUrl'
+    ]),
+    isShow() {
+      if (this.$route.path === '/order/trains') {
+        return true
+      }
+      return false
+    }
+  },
+  mounted() {
+    this.subInfo.beginDate = this.$route.query.beginTime
+    this.subInfo.endate = this.$route.query.endTime
+    this.getData()
+    if (this.$route.query.returnListUrl) {
+      this.setOrderListReturnUrl(this.$route.query.returnListUrl)
+    }
+  },
+  methods: {
+    ...mapActions([
+      'setOrderListReturnUrl'
+    ]),
+    getData() {
+      this.isLast = false
+      _order.trainsOrderList(this.subInfo).then(res => {
+        for (var i = 0; i < res.result.length; i++) {
+          this.dataList.push(res.result[i])
+        }
+        this.noData = false
+        if (res.result.length === 0) {
+          this.isLast = true
+          alert('暂无更多')
+          if (this.dataList.length === 0) {
+            this.noData = true
+          }
+        }
+      })
+    },
+    onRefresh(done) {      // 下拉刷新
+      this.subInfo.page = 1
+      this.dataList = []
+      this.getData()
+      done()
+    },
+    onInfinite(done) {
+      if (!this.isLast) {
+        this.subInfo.page++
+        this.getData()
+      } else {
+        alert('暂无更多')
+      }
+      done()
+    },
+    reset() {
+      this.calendar4.display = ''
+      this.calendar4.value = []
+      this.calendar5.display = ''
+      this.calendar5.value = []
+      this.subInfo.orderStatus = 0
+      this.subInfo.orderCode = ''
+      this.isTrains = true
+    },
+    search() {
+      this.selShow = false
+      if (this.calendar4.value.length > 1) {
+        this.subInfo.beginDate = this.calendar4.value[0].join('-')
+        this.subInfo.endate = this.calendar4.value[1].join('-')
+      }
+      if (this.calendar5.value.length > 1) {
+        this.subInfo.beginTrainDate = this.calendar5.value[0].join('-')
+        this.subInfo.endTrainDate = this.calendar5.value[1].join('-')
+      }
+      this.subInfo.page = 1
+      this.dataList = []
+      this.getData()
+    },
+    cancelTrainsOrder(orderCode) {
+      _order.cancelTrainsOrder({
+        orderCode: orderCode
+      }).then(res => {
+        alert('取消成功')
+        this.onRefresh()
+      })
+    }
+  }
+}
+
+</script>
+
+<style scoped>
+.ordertrains {
+  height: 100%;
+}
+
+.ordertrains .bgo {
+  background: #03A9F4;
+}
+
+.ordertrains .co,
+.ordertrains .cb {
+  color: #03A9F4;
+}
+
+.aaa {
+  margin-top: 1.5rem;
+}
+
+.line80 {
+  line-height: .8rem;
+}
+
+.order_index_item {
+  margin-top: .7rem;
+  position: relative;
+}
+
+.order_index_item_1 {
+  width: 100%;
+  border-radius: 5px 5px 0 0;
+  line-height: .8rem;
+}
+
+.tr {
+  text-align: right;
+}
+
+.order_index_item {
+  margin-top: .7rem;
+  position: relative;
+  display: block;
+}
+
+.order_index_item_1 {
+  width: 100%;
+  border-radius: 5px 5px 0 0;
+  line-height: .8rem;
+}
+
+.tr {
+  text-align: right;
+}
+
+.order_index_item_img {
+  width: 1rem;
+  height: 1rem;
+  border-radius: 50%;
+  position: absolute;
+  top: -.5rem;
+  left: .3rem;
+  border: 1px solid #03A9F4;
+}
+
+.order_index_item_img img {
+  width: .5rem;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  margin: auto;
+}
+
+.order_index_item_2 {
+  display: block;
+  padding: .2rem .3rem;
+  background: #fff;
+  border-radius: 0 0 5px 5px;
+}
+
+.order_index_item_2 .p {
+  width: 4.5rem;
+}
+
+.order_index_item_2 .f28 {
+  margin-top: .1rem;
+}
+
+.index_sel {
+  width: 100%;
+  height: 100%;
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: -1;
+}
+
+.sel_box {
+  width: 80%;
+  height: 100%;
+  position: absolute;
+  top: 0;
+  left: 100%;
+}
+
+.calendar .view {
+  margin: 0 auto;
+}
+
+#demo {
+  display: none;
+  padding-left: .3rem;
+  -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+}
+
+.calendar-hd {
+  -webkit-box-sizing: content-box;
+  -moz-box-sizing: content-box;
+  box-sizing: content-box;
+}
+
+.sel_box>p {
+  margin-top: .2rem;
+}
+
+.sel_item {
+  border-top: 1px solid #E6E6E6;
+  padding-top: .2rem;
+  margin-bottom: .2rem;
+}
+
+.sel_item>.tc {
+  width: 1.4rem;
+  line-height: .6rem;
+  border-radius: .6rem;
+  margin-top: .3rem;
+  margin-right: .38rem;
+}
+
+.sel_item>.tc.active {
+  color: #fff;
+  background: linear-gradient(to right, #03a9f4, #00BCD4);
+}
+
+.sel_sub {
+  width: 80%;
+  position: fixed;
+  bottom: 0;
+  line-height: 1rem;
+  z-index: 2;
+}
+
+.sel_sub>div {
+  width: 50%;
+}
+
+.sel_sub>div:nth-child(1) {
+  background: #daedf0;
+}
+
+.marb100 {
+  margin-bottom: 1.2rem;
+}
+
+.sel_item>input {
+  font-size: .24rem;
+  border: 1px solid #F3F3F3;
+  width: 100% !important;
+  margin: .3rem auto;
+  background: #F3F3F3;
+}
+
+.input {
+  border-radius: .8rem;
+  line-height: .6rem;
+  margin: 0;
+  text-align: center;
+}
+
+.sel_nav {
+  position: relative;
+}
+
+.sel_nav_item {
+  width: 1.2rem;
+  height: .4rem;
+  border-radius: .4rem;
+  position: absolute;
+  top: 0;
+  right: .3rem;
+}
+
+.sel_nav_item>p {
+  width: .8rem;
+  line-height: .4rem;
+  border-radius: .4rem;
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+.order_index_item_2>.clearfix {
+  min-height: .5rem;
+}
+
+.order_index_trains span {
+  padding: .05rem .15rem;
+  border-radius: .5rem;
+}
+
+.order_index_trains .bgc {
+  background-color: #03A9F4;
+}
+
+.order_index_trains .bgb {
+  background-color: #00BCD4;
+}
+
+.order_index_item_2 a {
+  padding: .06rem .2rem;
+  border-radius: .5rem;
+  display: inline-block;
+  margin-left: .2rem;
+}
+
+.border_b {
+  border: 1px solid #03A9F4;
+}
+
+.border_c {
+  border: 1px solid #8e8e8e;
+}
+
+.index_sel {
+  width: 100%;
+  height: 100%;
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 999;
+  background: rgba(0, 0, 0, .7)
+}
+
+.index_sel .close {
+  width: 20%;
+  height: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+.sel_box {
+  width: 80%;
+  height: 100%;
+  position: absolute;
+  top: 0;
+  left: 100%;
+  overflow: scroll;
+}
+
+
+
+/*弹出框*/
+
+.calendar-dialog {
+  position: absolute;
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 999;
+}
+
+.calendar-dialog-mask {
+  background: rgba(255, 255, 255, .5);
+  width: 100%;
+  height: 100%;
+}
+
+.calendar-dialog-body {
+  background: #fff;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  padding: 20px;
+  border: 1px solid #eee;
+  border-radius: 2px;
+  width: 6.4rem;
+}
+</style>

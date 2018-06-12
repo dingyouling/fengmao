@@ -1,0 +1,149 @@
+import {
+  SET_FROM_STATION,
+  SET_TO_STATION,
+  SET_TRAIN_DATE,
+  SAVE_HIS_STATIONS,
+  SAVE_FROM_TO,
+  SAVE_TRAINS_DATA,
+  SET_CHOOSE_TRAIN,
+  SET_LOGIN_TOKEN,
+  CLEAR_LOGIN_TOKEN,
+  SET_LOGIN_DATA,
+  SET_PROCESS
+} from '../types.js'
+import router from '../../router'
+import { alert } from '../../util/tool.js'
+import _trains from '../../fetch/trains.js'
+import store from '../../store'
+const state = {
+  fromStation: '上海',
+  toStation: '北京',
+  trainDate: {
+    date: '',
+    weekDay: ''
+  },
+  trainsInfo: JSON.parse(localStorage.getItem('trainsDate')),
+  hisStations: localStorage.getItem('historyStation'),
+  hisFromTo: localStorage.getItem('historyTrainLine'),
+  chooseTrain: JSON.parse(localStorage.getItem('chooseTrain')),
+  loginData: JSON.parse(sessionStorage.getItem('loginData')),
+  process: 2,
+  paytimeRemain: {
+    h: 0,
+    m: 0
+  }
+}
+
+const actions = {
+  setFromStation: ({ commit }, fromStation) => {
+    commit(SET_FROM_STATION, fromStation)
+  },
+  setToStation: ({ commit }, toStation) => {
+    commit(SET_TO_STATION, toStation)
+  },
+  setTrainDate: ({ commit }, trainDate) => {
+    commit(SET_TRAIN_DATE, trainDate)
+  },
+  saveHisStations: ({ commit }, stations) => {
+    commit(SAVE_HIS_STATIONS, stations)
+  },
+  saveFromTo: ({ commit }, fromTo) => {
+    commit(SAVE_FROM_TO, fromTo)
+  },
+  saveTrainData: ({ commit }, params) => {
+    commit(SAVE_TRAINS_DATA, params)
+  },
+  setChooseTrain: ({ commit }, params) => {
+    commit(SET_CHOOSE_TRAIN, params)
+  },
+  setLoginToken: ({ commit }, params) => {
+    commit(SET_LOGIN_TOKEN, params)
+  },
+  clearLoginToken: ({ commit }, params) => {
+    commit(CLEAR_LOGIN_TOKEN, params)
+  },
+  setLoginData: ({ commit }, params) => {
+    commit(SET_LOGIN_DATA, params)
+  },
+  setProcess: ({ commit }) => {
+    commit(SET_PROCESS)
+  }
+}
+
+const mutations = {
+  [SET_FROM_STATION](state, fromStation) {
+    state.fromStation = fromStation
+  },
+  [SET_TO_STATION](state, toStation) {
+    state.toStation = toStation
+  },
+  [SET_TRAIN_DATE](state, trainDate) {
+    state.trainDate = trainDate
+  },
+  [SAVE_HIS_STATIONS](state, stations) {
+    state.hisStations = stations
+  },
+  [SAVE_FROM_TO](state, fromTo) {
+    state.hisFromTo = fromTo
+  },
+  [SAVE_TRAINS_DATA](state, params) {
+    state.trainsInfo = params
+    localStorage.trainsDate = JSON.stringify(params)
+  },
+  [SET_CHOOSE_TRAIN](state, params) {
+    state.chooseTrain = params
+    localStorage.chooseTrain = JSON.stringify(params)
+  },
+  [SET_LOGIN_TOKEN](state, params) {
+    state.loginData = params
+    sessionStorage.loginData = JSON.stringify(params)
+  },
+  [CLEAR_LOGIN_TOKEN](state, params) {
+    state.loginData = params
+    sessionStorage.removeItem('loginData')
+  },
+  [SET_LOGIN_DATA](state, params) {
+    if (params.account === '') {
+      alert('请输入账号')
+      return false
+    }
+    if (params.code === '') {
+      alert('请输入密码')
+      return false
+    }
+    _trains.railwayLogin(params).then(res => {
+      store.dispatch('setLoginToken', res.result)
+      if (params.pageType === 'serve') {
+        router.push({path: '/index/trains/serve'})
+      } else if (params.pageType === 'chooseRiders') {
+        router.push({path: '/index/trains/chooseRiders'})
+      }
+    }).catch(error => {
+      console.log(error)
+    })
+  },
+  [SET_PROCESS](state) {
+    state.process += 2
+    console.log(state.process)
+  }
+
+}
+
+const getters = {
+  fromStation: state => state.fromStation,
+  toStation: state => state.toStation,
+  trainDate: state => state.trainDate,
+  hisStations: state => state.hisStations,
+  hisFromTo: state => state.hisFromTo,
+  trainsInfo: state => state.trainsInfo,
+  chooseTrain: state => state.chooseTrain,
+  loginData: state => state.loginData,
+  process: state => state.process
+}
+
+export default {
+  state,
+  actions,
+  mutations,
+  getters
+}

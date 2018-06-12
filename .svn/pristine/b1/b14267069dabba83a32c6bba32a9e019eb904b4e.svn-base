@@ -1,0 +1,38 @@
+<template>
+	<div>
+		<nav class="bar bar-tab f26 tc train-bar-tab">
+      <a class="tab-item external active" @click="qp">
+          <img src="../../../assets/images/trains/trains_icon01@2x.png" alt="">
+          <span class="tab-label">抢票</span>
+      </a>
+      <router-link class="tab-item external active" :to="'/order/trains?beginTime='+'&endTime='+'&returnListUrl='+$route.path">
+          <img src="../../../assets/images/trains/trains_icon02@2x.png" alt="">
+          <span class="tab-label">订单</span>
+      </router-link>
+      <router-link class="tab-item external active" to="/index/trains/serve">
+          <img src="../../../assets/images/trains/trains_icon03@2x.png" alt="">
+          <span class="tab-label">火车服务</span>
+      </router-link>
+	  </nav>
+	</div>
+</template>
+
+<script>
+import { alert } from '../../../util/tool'
+export default {
+  data() {
+    return {}
+  },
+  methods: {
+    qp() {
+      alert('开发中')
+    }
+  }
+}
+</script>
+
+<style scoped>
+	.train-bar-tab .active{
+		color: #03a9f4;
+	}
+</style>

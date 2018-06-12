@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>帮助说明</title>
+    <script src="./rem.js"></script>
+    <link rel="stylesheet" href="./common.css">
+    <link rel="stylesheet" href="./gas/gas_help.css">
+</head>
+<body  style="-moz-user-select:none;-webkit-user-select:none;">
+    <header class="bgf">
+        <a href="javascript:history.back();" class="f24 back"></a>
+        <h1 class="f40 tc">帮助说明</h1>
+    </header>
+    <div class="dc_help_jy pd">
+        <p class="c33 f28 text2">风猫仅为用户提供代充值服务，本服务不销售任何实体/电子充值卡，如需要充值卡请到中石化/中石油官方销售网点购买。</p>
+    </div>
+    <div class="dc_help_jy pd">
+        <h1 class="c33 tc f34 bold">支持卡类型及充值金额限制</h1>
+        <p class="c33 f32 text2 bold" style="line-height:.5rem;">
+            1、中石化支持不记名卡、单位卡及个人卡。不记名卡内金额不超过1000元，超过则不能充值。个人卡圈存不超过5000元，单位卡充值不超过400万。中石油个人卡卡内余额不超过5000元。
+        </p>
+        <p class="c33 f32 text2 bold" style="line-height:.5rem;">
+            2、中石化不支持增值税发票类型的单位卡、副卡、过期卡、挂失卡、销户卡、灰卡的代充，中石油不支持不记名卡、司机卡充值
+        </p>
+    </div>
+    <div class="dc_help_jy dc_help_qc pd">
+        <h1 class="c33 tc f34 bold">圈存</h1>
+        <p class="c33 f28 text2">1 “圈存”即激活已充值到账的金额到加油卡中，您可以把加油卡给工作人员，告诉他：我是在网上充值的，请帮我圈存。工作人员会拿卡去圈存机器上刷新一下，金额就圈存到加油卡中、并可以刷卡加油了；</p>
+        <p class="c33 f28 text2">2 充值到账后，金额永远不会过期，您在需要加油时再去加油站圈存即可；</p>
+        <p class="c33 f28 text2">3中石化加油卡在办卡所在省的省内任意中石化直营加油站易捷便利店自助圈存机操作（或请工作人员操作）、可以在全国刷卡加油使用；中石油加油卡可在全国任意办卡充值加油站请工作人员帮忙圈存；</p>
+        <p class="c33 f28 text2">4如果您是中石化、充值到账但圈存时没有钱，则可能因为加油卡是多用户卡、需要请客服或者加油站工作人员帮忙给加油卡“预分配”，然后再去圈存；如果您是中石油卡，收到中石油的充值成功短信即代表充值成功，直接去加油站圈存即可。</p>
+    </div>
+    <div class="dc_help_jy dc_help_qc pd">
+        <h1 class="c33 tc f34 bold">发票</h1>
+        <p class="c33 f32 text2 bold" style="line-height:.5rem;">固定面值充值为油卡代充服务，不提供任何发票，仅限加油卡任意充值可开发票（任意充目前仅限中石化）。发票请至加油站圈存时向加油站工作人员索取，注意开票时要和加油站做人员说“我在网上营业厅充值了，请帮我开发票”，工作人员查询后为您开具普通发票。</p>
+    </div>
+    <div class="dc_help_jy dc_help_qc pd">
+        <h1 class="c33 tc f34 bold">开票地点</h1>
+        <p class="c33 f28 text2">中石化：办卡所在地市直营加油站（部分油卡需至办卡网点补开发票），仅可开充值发票，如售卡网点不给客户开具发票，可以拨打95105888/95105988投诉这个站点,立马会有站长跟客户联系。</p>
+        <p class="c33 f28 text2">中石油：办卡所在地市直营加油站，仅可开消费发票</p>
+    </div>
+    <div class="dc_help_jy dc_help_qc pd">
+        <h1 class="c33 tc f34 bold">开票时间</h1>
+        <p class="c33 f28 text2">中石化：充值到账24/48小时后(部分省市48小时后)90天内</p>
+        <p class="c33 f28 text2">中石油：充值到账50天内</p>
+    </div>
+    <div class="dc_help_jy dc_help_qc pd">
+        <h1 class="c33 tc f34 bold">充错账号，怎么办？</h1>
+        <p class="c33 f28 text2">中石化、中石油充值成功之后均无法退款，所以请客户下单时核对好卡号</p>
+    </div>
+    <div class="dc_help_jy dc_help_qc pd">
+        <h1 class="c33 tc f34 bold">充值不到账/充值中的情况</h1>
+        <p class="c33 f28 text2">
+            1、中石化每天晚上22：50至次日凌晨00：50是网站系统结算时间，此段时间内暂停充值，订单待充值/充值中，结算结束后系统自动重新提交充值
+        </p>
+        <p class="c33 f28 text2">
+            2、如遇地区维护，订单待充值/充值中，等官方维护结束后统一到账处理。官方升级系统或者网站充值不稳定时，容易生成一种支付成功，充值未成功的订单，这种异常订单官方会在第二个工作日下午2~3点到账，个别地区如深圳需等2~3个工作日，部分地区需客户提供身份证后六位或者手机号码等信息给我司客服投诉才会对账处理。这种异常订单 官方一定会到账处理，不会退款，如遇这种订单 请耐心等待官方处理结果，期间带来的不便请各位谅解！
+        </p>
+    </div>
+</body>
+</html>
